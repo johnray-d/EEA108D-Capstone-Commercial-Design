@@ -1,0 +1,16 @@
+Bus,Y0_Voltage_V,Y0_Angle_Deg,Y10_Voltage_V,Y10_Angle_Deg,Nominal_V,Zone
+GRID,410.00,0.0000,410.00,0.0000,400,13.8 kV Grid Reference
+PCC,409.60,-0.1631,409.46,-0.2198,400,Point of Common Coupling
+HV,409.59,-0.1631,409.44,-0.2198,400,13.8 kV Primary Switchgear
+TA,404.13,-2.0988,402.14,-2.8416,400,Transformer Secondary Stabs
+MDB-A,403.86,-2.1311,401.77,-2.8859,400,2500A Main Switchboard
+CAP-A,403.93,-2.1422,401.87,-2.9014,400,400 kVAr Detuned Bank
+F1,403.23,-2.1436,400.92,-2.9030,400,Floor 1 Retail Panel
+F2,402.97,-2.1487,400.57,-2.9098,400,Floor 2 Retail Panel
+F3,402.79,-2.1534,400.32,-2.9163,400,Floor 3 Office Panel
+F4,402.55,-2.1584,400.00,-2.9230,400,Floor 4 Office Panel
+F5,402.31,-2.1634,399.68,-2.9298,400,Floor 5 Office Panel
+F6,402.07,-2.1684,399.36,-2.9366,400,Floor 6 Office Panel
+EDB,403.33,-2.1483,401.06,-2.9093,400,Essential Distribution Board
+MDP,402.20,-2.0731,399.53,-2.8070,400,Mechanical Distribution Panel
+FIRE,404.13,-2.0988,402.14,-2.8416,400,Fire Pump Controller ATS

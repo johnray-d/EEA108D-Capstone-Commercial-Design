@@ -1,0 +1,525 @@
+{
+  "simulationEngine": {
+    "name": "Custom Python + NumPy backward/forward sweep; nodal impedance fault check",
+    "solverMethod": "Constant-PQ iterative backward-forward sweep with voltage-dependent V² capacitor injection",
+    "convergenceTolerance_V": "1.0e-9",
+    "disclaimer": "This website presents results from the capstone project solver package. It does not run ETAP, PowerWorld, or MATLAB."
+  },
+  "scenarios": {
+    "A1_Y0_uncorrected": {
+      "id": "A1_Y0_uncorrected",
+      "name": "Alternative 1 - Year 0 (Uncorrected)",
+      "description": "Commissioning year normal peak demand without power factor correction",
+      "system": "Alternative 1 (1 x 1250 kVA)",
+      "year": 0,
+      "utilityVoltage_pu": 1.00,
+      "apfcState": "OFF",
+      "switchedSteps": 0,
+      "switchedKVAr": 0,
+      "firePumpRunning": false,
+      "pcc": {
+        "kW": 768.51,
+        "kVAr": 440.05,
+        "kVA": 885.58,
+        "displacementPF": 0.8678,
+        "truePF": 0.8582
+      },
+      "transformer": {
+        "loading_pct": 69.26,
+        "losses_kW": 6.55,
+        "status": "Normal"
+      },
+      "minVoltage": {
+        "bus": "F6",
+        "voltage_V": 396.66,
+        "voltage_pu": 0.9917
+      },
+      "buses": {
+        "GRID": { "V": 410.00, "angle_deg": 0.000 },
+        "PCC": { "V": 409.12, "angle_deg": -0.210 },
+        "HV": { "V": 409.10, "angle_deg": -0.210 },
+        "TA": { "V": 398.84, "angle_deg": -2.450 },
+        "MDB-A": { "V": 398.46, "angle_deg": -2.482 },
+        "F1": { "V": 397.82, "angle_deg": -2.495 },
+        "F2": { "V": 397.57, "angle_deg": -2.500 },
+        "F3": { "V": 397.38, "angle_deg": -2.505 },
+        "F4": { "V": 397.14, "angle_deg": -2.510 },
+        "F5": { "V": 396.90, "angle_deg": -2.515 },
+        "F6": { "V": 396.66, "angle_deg": -2.520 },
+        "EDB": { "V": 397.93, "angle_deg": -2.500 },
+        "MDP": { "V": 396.79, "angle_deg": -2.425 },
+        "FIRE": { "V": 398.84, "angle_deg": -2.450 }
+      },
+      "warnings": [
+        "PCC displacement PF (0.8678) is below the 0.97 design target and 0.90 utility threshold.",
+        "Transformer and main feeder carry unmitigated reactive current."
+      ]
+    },
+    "A1_Y0_corrected": {
+      "id": "A1_Y0_corrected",
+      "name": "Alternative 1 - Year 0 (Corrected)",
+      "description": "Commissioning year normal peak demand with APFC controller active (10 steps)",
+      "system": "Alternative 1 (1 x 1250 kVA)",
+      "year": 0,
+      "utilityVoltage_pu": 1.00,
+      "apfcState": "AUTO",
+      "switchedSteps": 10,
+      "switchedKVAr": 250,
+      "firePumpRunning": false,
+      "pcc": {
+        "kW": 768.38,
+        "kVAr": 177.58,
+        "kVA": 788.63,
+        "displacementPF": 0.9743,
+        "truePF": 0.9635
+      },
+      "transformer": {
+        "loading_pct": 61.61,
+        "losses_kW": 5.18,
+        "status": "Optimal"
+      },
+      "minVoltage": {
+        "bus": "F6",
+        "voltage_V": 402.07,
+        "voltage_pu": 1.0052
+      },
+      "buses": {
+        "GRID": { "V": 410.00, "angle_deg": 0.000 },
+        "PCC": { "V": 409.60, "angle_deg": -0.163 },
+        "HV": { "V": 409.59, "angle_deg": -0.163 },
+        "TA": { "V": 404.13, "angle_deg": -2.099 },
+        "MDB-A": { "V": 403.86, "angle_deg": -2.131 },
+        "F1": { "V": 403.23, "angle_deg": -2.144 },
+        "F2": { "V": 402.97, "angle_deg": -2.149 },
+        "F3": { "V": 402.79, "angle_deg": -2.153 },
+        "F4": { "V": 402.55, "angle_deg": -2.158 },
+        "F5": { "V": 402.31, "angle_deg": -2.163 },
+        "F6": { "V": 402.07, "angle_deg": -2.168 },
+        "EDB": { "V": 403.33, "angle_deg": -2.148 },
+        "MDP": { "V": 402.20, "angle_deg": -2.073 },
+        "FIRE": { "V": 404.13, "angle_deg": -2.099 }
+      },
+      "warnings": []
+    },
+    "A1_Y10_uncorrected": {
+      "id": "A1_Y10_uncorrected",
+      "name": "Alternative 1 - Year 10 (Uncorrected)",
+      "description": "Ten-year growth demand without APFC, demonstrating critical loading & voltage drops",
+      "system": "Alternative 1 (1 x 1250 kVA)",
+      "year": 10,
+      "utilityVoltage_pu": 1.00,
+      "apfcState": "OFF",
+      "switchedSteps": 0,
+      "switchedKVAr": 0,
+      "firePumpRunning": false,
+      "pcc": {
+        "kW": 1036.57,
+        "kVAr": 610.37,
+        "kVA": 1202.92,
+        "displacementPF": 0.8617,
+        "truePF": 0.8521
+      },
+      "transformer": {
+        "loading_pct": 94.14,
+        "losses_kW": 12.10,
+        "status": "High Thermal Loading"
+      },
+      "minVoltage": {
+        "bus": "F6",
+        "voltage_V": 392.40,
+        "voltage_pu": 0.9810
+      },
+      "buses": {
+        "GRID": { "V": 410.00, "angle_deg": 0.000 },
+        "PCC": { "V": 408.80, "angle_deg": -0.280 },
+        "HV": { "V": 408.77, "angle_deg": -0.280 },
+        "TA": { "V": 395.20, "angle_deg": -3.250 },
+        "MDB-A": { "V": 394.80, "angle_deg": -3.290 },
+        "F1": { "V": 393.90, "angle_deg": -3.310 },
+        "F2": { "V": 393.50, "angle_deg": -3.320 },
+        "F3": { "V": 393.20, "angle_deg": -3.330 },
+        "F4": { "V": 392.90, "angle_deg": -3.340 },
+        "F5": { "V": 392.60, "angle_deg": -3.350 },
+        "F6": { "V": 392.40, "angle_deg": -3.360 },
+        "EDB": { "V": 394.10, "angle_deg": -3.320 },
+        "MDP": { "V": 392.50, "angle_deg": -3.210 },
+        "FIRE": { "V": 395.20, "angle_deg": -3.250 }
+      },
+      "warnings": [
+        "Uncorrected Year 10 load approaches 94.1% transformer capacity, leaving insufficient thermal margin.",
+        "When combined with branch circuit reserve (1% = 4V), remote panels risk falling near voltage limit."
+      ]
+    },
+    "A1_Y10_corrected": {
+      "id": "A1_Y10_corrected",
+      "name": "Alternative 1 - Year 10 Corrected (Recommended Baseline)",
+      "description": "Governing recommended design scenario: nominal utility, full 10-year load, 14 APFC steps (350 kVAr)",
+      "system": "Alternative 1 (1 x 1250 kVA)",
+      "year": 10,
+      "utilityVoltage_pu": 1.00,
+      "apfcState": "AUTO",
+      "switchedSteps": 14,
+      "switchedKVAr": 350,
+      "firePumpRunning": false,
+      "pcc": {
+        "kW": 1035.58,
+        "kVAr": 242.34,
+        "kVA": 1063.56,
+        "displacementPF": 0.9737,
+        "truePF": 0.9629
+      },
+      "transformer": {
+        "loading_pct": 83.12,
+        "effectiveThermalLoading_pct": 87.49,
+        "losses_kW": 9.43,
+        "status": "Compliant and Verified"
+      },
+      "minVoltage": {
+        "bus": "F6",
+        "voltage_V": 399.36,
+        "voltage_pu": 0.9984
+      },
+      "buses": {
+        "GRID": { "V": 410.00, "angle_deg": 0.0000 },
+        "PCC": { "V": 409.46, "angle_deg": -0.2198 },
+        "HV": { "V": 409.44, "angle_deg": -0.2198 },
+        "TA": { "V": 402.14, "angle_deg": -2.8416 },
+        "MDB-A": { "V": 401.77, "angle_deg": -2.8859 },
+        "CAP-A": { "V": 401.87, "angle_deg": -2.9014 },
+        "F1": { "V": 400.92, "angle_deg": -2.9030 },
+        "F2": { "V": 400.57, "angle_deg": -2.9098 },
+        "F3": { "V": 400.32, "angle_deg": -2.9163 },
+        "F4": { "V": 400.00, "angle_deg": -2.9230 },
+        "F5": { "V": 399.68, "angle_deg": -2.9298 },
+        "F6": { "V": 399.36, "angle_deg": -2.9366 },
+        "EDB": { "V": 401.06, "angle_deg": -2.9093 },
+        "MDP": { "V": 399.53, "angle_deg": -2.8070 },
+        "FIRE": { "V": 402.14, "angle_deg": -2.8416 }
+      },
+      "branches": [
+        { "name": "SOURCE", "current_A": 1499.65, "kW_sent": 1036.01, "kVAr_sent": 246.64, "loading_pct": 0.0, "loss_kW": 0.4297, "loss_kVAr": 4.2966 },
+        { "name": "HV-CABLE", "current_A": 1499.65, "kW_sent": 1035.58, "kVAr_sent": 242.34, "loading_pct": 0.0, "loss_kW": 0.0560, "loss_kVAr": 0.0136 },
+        { "name": "TR-A", "current_A": 1499.65, "kW_sent": 1035.53, "kVAr_sent": 242.33, "loading_pct": 83.12, "loss_kW": 8.6360, "loss_kVAr": 51.0913 },
+        { "name": "MAIN-A", "current_A": 1497.11, "kW_sent": 1025.09, "kVAr_sent": 191.24, "loading_pct": 53.90, "loss_kW": 0.7968, "loss_kVAr": 0.9683 },
+        { "name": "CAPFEED-A", "current_A": 507.55, "kW_sent": 1.85, "kVAr_sent": -353.19, "loading_pct": 52.60, "loss_kW": 0.0954, "loss_kVAr": 0.0927 },
+        { "name": "F1", "current_A": 248.17, "kW_sent": 151.26, "kVAr_sent": 83.34, "loading_pct": 60.79, "loss_kW": 0.2959, "loss_kVAr": 0.2217 },
+        { "name": "F2", "current_A": 248.38, "kW_sent": 151.38, "kVAr_sent": 83.43, "loading_pct": 60.85, "loss_kW": 0.4149, "loss_kVAr": 0.3109 },
+        { "name": "F3", "current_A": 233.85, "kW_sent": 143.04, "kVAr_sent": 77.61, "loading_pct": 57.29, "loss_kW": 0.4729, "loss_kVAr": 0.3544 },
+        { "name": "F4", "current_A": 234.04, "kW_sent": 143.14, "kVAr_sent": 77.69, "loading_pct": 57.33, "loss_kW": 0.5789, "loss_kVAr": 0.4338 },
+        { "name": "F5", "current_A": 234.23, "kW_sent": 143.25, "kVAr_sent": 77.77, "loading_pct": 57.38, "loss_kW": 0.6853, "loss_kVAr": 0.5135 },
+        { "name": "F6", "current_A": 234.42, "kW_sent": 143.35, "kVAr_sent": 77.85, "loading_pct": 57.42, "loss_kW": 0.7920, "loss_kVAr": 0.5935 },
+        { "name": "EDB", "current_A": 150.70, "kW_sent": 99.61, "kVAr_sent": 32.79, "loading_pct": 42.10, "loss_kW": 0.1615, "loss_kVAr": 0.0981 },
+        { "name": "MDP", "current_A": 83.02, "kW_sent": 47.42, "kVAr_sent": 33.00, "loading_pct": 62.20, "loss_kW": 0.3095, "loss_kVAr": 0.1191 },
+        { "name": "FIRE", "current_A": 0.00, "kW_sent": 0.00, "kVAr_sent": 0.00, "loading_pct": 0.00, "loss_kW": 0.0000, "loss_kVAr": 0.0000 }
+      ],
+      "warnings": []
+    },
+    "A1_Y10_low_utility": {
+      "id": "A1_Y10_low_utility",
+      "name": "Alternative 1 - Year 10 Low Utility (0.975 pu)",
+      "description": "Utility grid sags to 0.975 pu (13.455 kV). Controller switches 15 steps (375 kVAr) to maintain voltage",
+      "system": "Alternative 1 (1 x 1250 kVA)",
+      "year": 10,
+      "utilityVoltage_pu": 0.975,
+      "apfcState": "AUTO",
+      "switchedSteps": 15,
+      "switchedKVAr": 375,
+      "firePumpRunning": false,
+      "pcc": {
+        "kW": 1036.41,
+        "kVAr": 239.27,
+        "kVA": 1063.67,
+        "displacementPF": 0.9744,
+        "truePF": 0.9636
+      },
+      "transformer": {
+        "loading_pct": 85.26,
+        "effectiveThermalLoading_pct": 89.75,
+        "losses_kW": 9.92,
+        "status": "Safe under extreme low utility"
+      },
+      "minVoltage": {
+        "bus": "F6",
+        "voltage_V": 388.92,
+        "voltage_pu": 0.9723
+      },
+      "buses": {
+        "GRID": { "V": 399.75, "angle_deg": 0.000 },
+        "PCC": { "V": 399.20, "angle_deg": -0.220 },
+        "HV": { "V": 399.18, "angle_deg": -0.220 },
+        "TA": { "V": 391.77, "angle_deg": -2.850 },
+        "MDB-A": { "V": 391.39, "angle_deg": -2.890 },
+        "F1": { "V": 390.52, "angle_deg": -2.910 },
+        "F2": { "V": 390.17, "angle_deg": -2.915 },
+        "F3": { "V": 389.91, "angle_deg": -2.920 },
+        "F4": { "V": 389.58, "angle_deg": -2.925 },
+        "F5": { "V": 389.25, "angle_deg": -2.930 },
+        "F6": { "V": 388.92, "angle_deg": -2.940 },
+        "EDB": { "V": 390.67, "angle_deg": -2.910 },
+        "MDP": { "V": 389.09, "angle_deg": -2.810 },
+        "FIRE": { "V": 391.77, "angle_deg": -2.850 }
+      },
+      "warnings": [
+        "F6 bus drops to 388.92 V (0.9723 pu). After reserving 1% (4 V) for branch circuit wiring, terminal voltage is 384.92 V (> 380 V min limit: OK)."
+      ]
+    },
+    "A1_Y10_low_fire": {
+      "id": "A1_Y10_low_fire",
+      "name": "Alternative 1 - Year 10 Low Utility + Fire Pump",
+      "description": "Simultaneous worst-case: 0.975 pu utility + 37 kW fire pump operating + full 10-year load (16 APFC steps)",
+      "system": "Alternative 1 (1 x 1250 kVA)",
+      "year": 10,
+      "utilityVoltage_pu": 0.975,
+      "apfcState": "AUTO",
+      "switchedSteps": 16,
+      "switchedKVAr": 400,
+      "firePumpRunning": true,
+      "pcc": {
+        "kW": 1078.51,
+        "kVAr": 245.68,
+        "kVA": 1106.14,
+        "displacementPF": 0.9750,
+        "truePF": 0.9642
+      },
+      "transformer": {
+        "loading_pct": 88.67,
+        "effectiveThermalLoading_pct": 93.34,
+        "losses_kW": 10.74,
+        "status": "High Thermal Demand (Emergency Coincidence)"
+      },
+      "minVoltage": {
+        "bus": "F6",
+        "voltage_V": 387.80,
+        "voltage_pu": 0.9695
+      },
+      "buses": {
+        "GRID": { "V": 399.75, "angle_deg": 0.000 },
+        "PCC": { "V": 399.10, "angle_deg": -0.230 },
+        "HV": { "V": 399.08, "angle_deg": -0.230 },
+        "TA": { "V": 390.60, "angle_deg": -2.920 },
+        "MDB-A": { "V": 390.20, "angle_deg": -2.960 },
+        "F1": { "V": 389.35, "angle_deg": -2.980 },
+        "F2": { "V": 389.00, "angle_deg": -2.985 },
+        "F3": { "V": 388.75, "angle_deg": -2.990 },
+        "F4": { "V": 388.42, "angle_deg": -2.995 },
+        "F5": { "V": 388.10, "angle_deg": -3.000 },
+        "F6": { "V": 387.80, "angle_deg": -3.010 },
+        "EDB": { "V": 389.50, "angle_deg": -2.980 },
+        "MDP": { "V": 387.95, "angle_deg": -2.880 },
+        "FIRE": { "V": 386.40, "angle_deg": -3.100 }
+      },
+      "warnings": [
+        "Fire pump creates direct dedicated takeoff ahead of Q0 main breaker.",
+        "Effective thermal loading is 93.34% of 0.95 capability factor. System operates stably without transformer trip."
+      ]
+    },
+    "A2_Y10_corrected": {
+      "id": "A2_Y10_corrected",
+      "name": "Alternative 2 - Year 10 (Two 800 kVA Transformers)",
+      "description": "Split LV switchboard configuration with normally open bus tie. TA supplies odd floors+MDP+FIRE, TB supplies even floors+EDB",
+      "system": "Alternative 2 (2 x 800 kVA)",
+      "year": 10,
+      "utilityVoltage_pu": 1.00,
+      "apfcState": "AUTO",
+      "switchedSteps": 14,
+      "switchedKVAr": 350,
+      "firePumpRunning": false,
+      "pcc": {
+        "kW": 1034.93,
+        "kVAr": 254.51,
+        "kVA": 1065.73,
+        "displacementPF": 0.9711,
+        "truePF": 0.9603
+      },
+      "transformer": {
+        "loading_pct": 68.30,
+        "ta_loading_pct": 61.85,
+        "tb_loading_pct": 68.30,
+        "status": "Lower loading per unit, but higher capital cost"
+      },
+      "minVoltage": {
+        "bus": "F6",
+        "voltage_V": 400.31,
+        "voltage_pu": 1.0008
+      },
+      "buses": {
+        "GRID": { "V": 410.00, "angle_deg": 0.000 },
+        "PCC": { "V": 409.48, "angle_deg": -0.210 },
+        "HV": { "V": 409.46, "angle_deg": -0.210 },
+        "TA": { "V": 403.10, "angle_deg": -2.710 },
+        "TB": { "V": 402.50, "angle_deg": -2.820 },
+        "MDB-A": { "V": 402.80, "angle_deg": -2.740 },
+        "MDB-B": { "V": 402.15, "angle_deg": -2.860 },
+        "F1": { "V": 401.95, "angle_deg": -2.750 },
+        "F2": { "V": 401.00, "angle_deg": -2.880 },
+        "F3": { "V": 401.35, "angle_deg": -2.760 },
+        "F4": { "V": 400.45, "angle_deg": -2.890 },
+        "F5": { "V": 400.75, "angle_deg": -2.770 },
+        "F6": { "V": 400.31, "angle_deg": -2.900 },
+        "EDB": { "V": 401.40, "angle_deg": -2.870 },
+        "MDP": { "V": 400.60, "angle_deg": -2.690 },
+        "FIRE": { "V": 403.10, "angle_deg": -2.710 }
+      },
+      "warnings": [
+        "Normal operation divides building onto two independent busbars.",
+        "Bus tie breaker QT remains normally open; break-before-make interlocks prevent parallel operation."
+      ]
+    },
+    "A2_Y10_N1_shed": {
+      "id": "A2_Y10_N1_shed",
+      "name": "Alternative 2 - Transformer N-1 Outage (45% Shed)",
+      "description": "Transformer TB out of service. Tie QT closed. 45% normal load shed to protect surviving 800 kVA transformer",
+      "system": "Alternative 2 (1 x 800 kVA in N-1)",
+      "year": 10,
+      "utilityVoltage_pu": 1.00,
+      "apfcState": "AUTO",
+      "switchedSteps": 8,
+      "switchedKVAr": 200,
+      "firePumpRunning": false,
+      "pcc": {
+        "kW": 568.58,
+        "kVAr": 119.19,
+        "kVA": 580.94,
+        "displacementPF": 0.9787,
+        "truePF": 0.9678
+      },
+      "transformer": {
+        "loading_pct": 70.89,
+        "effectiveThermalLoading_pct": 74.63,
+        "status": "Safe after 45% load shedding"
+      },
+      "minVoltage": {
+        "bus": "F6",
+        "voltage_V": 397.65,
+        "voltage_pu": 0.9941
+      },
+      "buses": {
+        "GRID": { "V": 410.00, "angle_deg": 0.000 },
+        "PCC": { "V": 409.65, "angle_deg": -0.150 },
+        "HV": { "V": 409.63, "angle_deg": -0.150 },
+        "TA": { "V": 402.10, "angle_deg": -2.310 },
+        "MDB-A": { "V": 401.85, "angle_deg": -2.340 },
+        "MDB-B": { "V": 401.62, "angle_deg": -2.360 },
+        "F1": { "V": 401.00, "angle_deg": -2.350 },
+        "F2": { "V": 400.40, "angle_deg": -2.380 },
+        "F3": { "V": 400.40, "angle_deg": -2.360 },
+        "F4": { "V": 399.80, "angle_deg": -2.390 },
+        "F5": { "V": 399.80, "angle_deg": -2.370 },
+        "F6": { "V": 397.65, "angle_deg": -2.400 },
+        "EDB": { "V": 400.90, "angle_deg": -2.370 },
+        "MDP": { "V": 400.10, "angle_deg": -2.300 },
+        "FIRE": { "V": 402.10, "angle_deg": -2.310 }
+      },
+      "warnings": [
+        "CRITICAL CAUTION: Without shedding, 100% building load would overload surviving 800 kVA transformer to 131.11% (NOT OK).",
+        "45% normal demand is shed automatically before tie closing. Retained 55% demand (560.3 kW) keeps surviving transformer at 70.89% loading (OK).",
+        "Both transformers still depend on a single utility feeder; does not provide utility outage redundancy."
+      ]
+    },
+    "GEN_essential": {
+      "id": "GEN_essential",
+      "name": "Emergency Standby Generator (Island Mode)",
+      "description": "Utility failure: 400 kVA generator starts, ATS-E & FP-ATS transfer essential loads only",
+      "system": "Standby Diesel Generator (400 kVA / 320 kW)",
+      "year": 10,
+      "utilityVoltage_pu": 0.00,
+      "apfcState": "BLOCKED",
+      "switchedSteps": 0,
+      "switchedKVAr": 0,
+      "firePumpRunning": true,
+      "pcc": {
+        "kW": 0.0,
+        "kVAr": 0.0,
+        "kVA": 0.0,
+        "displacementPF": 0.0,
+        "truePF": 0.0
+      },
+      "generator": {
+        "rating_kVA": 400,
+        "rating_kW": 320,
+        "essentialDemand_kW": 179.39,
+        "essentialDemand_kVAr": 85.27,
+        "essentialDemand_kVA": 198.62,
+        "kWLoading_pct": 56.06,
+        "kVALoading_pct": 49.65,
+        "voltage_V": 400.0,
+        "status": "Islanded Essential Operation"
+      },
+      "minVoltage": {
+        "bus": "FIRE",
+        "voltage_V": 395.20,
+        "voltage_pu": 0.9880
+      },
+      "buses": {
+        "GRID": { "V": 0.0, "angle_deg": 0.0 },
+        "PCC": { "V": 0.0, "angle_deg": 0.0 },
+        "HV": { "V": 0.0, "angle_deg": 0.0 },
+        "TA": { "V": 0.0, "angle_deg": 0.0 },
+        "MDB-A": { "V": 0.0, "angle_deg": 0.0 },
+        "F1": { "V": 0.0, "angle_deg": 0.0 },
+        "F2": { "V": 0.0, "angle_deg": 0.0 },
+        "F3": { "V": 0.0, "angle_deg": 0.0 },
+        "F4": { "V": 0.0, "angle_deg": 0.0 },
+        "F5": { "V": 0.0, "angle_deg": 0.0 },
+        "F6": { "V": 0.0, "angle_deg": 0.0 },
+        "EDB": { "V": 398.5, "angle_deg": -0.8 },
+        "MDP": { "V": 397.2, "angle_deg": -1.2 },
+        "FIRE": { "V": 395.2, "angle_deg": -1.5 }
+      },
+      "warnings": [
+        "Normal retail and office floors (F1-F6) are de-energized during utility outage.",
+        "APFC is strictly blocked from operating on generator island supply to prevent self-excitation.",
+        "Open-transition four-pole ATS ensures utility and generator neutrals remain separated."
+      ]
+    }
+  },
+  "shortCircuitResults": {
+    "alternative1": [
+      { "bus": "PCC", "kV": 13.8, "utility_kA": 10.46, "motorBound_kA": 0.15, "total_kA": 10.60, "rating_kA": 25, "adequate": true },
+      { "bus": "HV", "kV": 13.8, "utility_kA": 10.42, "motorBound_kA": 0.15, "total_kA": 10.56, "rating_kA": 25, "adequate": true },
+      { "bus": "T", "kV": 0.40, "utility_kA": 33.07, "motorBound_kA": 5.02, "total_kA": 38.09, "rating_kA": 50, "adequate": true },
+      { "bus": "MDB", "kV": 0.40, "utility_kA": 32.41, "motorBound_kA": 5.02, "total_kA": 37.44, "rating_kA": 50, "adequate": true },
+      { "bus": "F1", "kV": 0.40, "utility_kA": 27.42, "motorBound_kA": 5.02, "total_kA": 32.44, "rating_kA": 50, "adequate": true },
+      { "bus": "F2", "kV": 0.40, "utility_kA": 25.77, "motorBound_kA": 5.02, "total_kA": 30.79, "rating_kA": 50, "adequate": true },
+      { "bus": "F3", "kV": 0.40, "utility_kA": 24.28, "motorBound_kA": 5.02, "total_kA": 29.31, "rating_kA": 50, "adequate": true },
+      { "bus": "F4", "kV": 0.40, "utility_kA": 22.95, "motorBound_kA": 5.02, "total_kA": 27.97, "rating_kA": 50, "adequate": true },
+      { "bus": "F5", "kV": 0.40, "utility_kA": 21.74, "motorBound_kA": 5.02, "total_kA": 26.76, "rating_kA": 50, "adequate": true },
+      { "bus": "F6", "kV": 0.40, "utility_kA": 20.64, "motorBound_kA": 5.02, "total_kA": 25.66, "rating_kA": 50, "adequate": true },
+      { "bus": "EDB", "kV": 0.40, "utility_kA": 26.30, "motorBound_kA": 5.02, "total_kA": 31.32, "rating_kA": 50, "adequate": true },
+      { "bus": "MDP", "kV": 0.40, "utility_kA": 13.96, "motorBound_kA": 5.02, "total_kA": 18.98, "rating_kA": 50, "adequate": true },
+      { "bus": "FIRE", "kV": 0.40, "utility_kA": 20.15, "motorBound_kA": 5.02, "total_kA": 25.17, "rating_kA": 50, "adequate": true }
+    ],
+    "alternative2": [
+      { "bus": "PCC", "kV": 13.8, "utility_kA": 10.46, "motorBound_kA": 0.15, "total_kA": 10.60, "rating_kA": 25, "adequate": true },
+      { "bus": "HV", "kV": 13.8, "utility_kA": 10.42, "motorBound_kA": 0.15, "total_kA": 10.56, "rating_kA": 25, "adequate": true },
+      { "bus": "T", "kV": 0.40, "utility_kA": 21.89, "motorBound_kA": 5.02, "total_kA": 26.91, "rating_kA": 50, "adequate": true },
+      { "bus": "MDB", "kV": 0.40, "utility_kA": 21.41, "motorBound_kA": 5.02, "total_kA": 26.43, "rating_kA": 50, "adequate": true },
+      { "bus": "F1", "kV": 0.40, "utility_kA": 19.11, "motorBound_kA": 5.02, "total_kA": 24.13, "rating_kA": 50, "adequate": true },
+      { "bus": "F2", "kV": 0.40, "utility_kA": 18.30, "motorBound_kA": 5.02, "total_kA": 23.32, "rating_kA": 50, "adequate": true },
+      { "bus": "F3", "kV": 0.40, "utility_kA": 17.55, "motorBound_kA": 5.02, "total_kA": 22.57, "rating_kA": 50, "adequate": true },
+      { "bus": "F4", "kV": 0.40, "utility_kA": 16.85, "motorBound_kA": 5.02, "total_kA": 21.87, "rating_kA": 50, "adequate": true },
+      { "bus": "F5", "kV": 0.40, "utility_kA": 16.20, "motorBound_kA": 5.02, "total_kA": 21.22, "rating_kA": 50, "adequate": true },
+      { "bus": "F6", "kV": 0.40, "utility_kA": 15.59, "motorBound_kA": 5.02, "total_kA": 20.61, "rating_kA": 50, "adequate": true },
+      { "bus": "EDB", "kV": 0.40, "utility_kA": 18.57, "motorBound_kA": 5.02, "total_kA": 23.59, "rating_kA": 50, "adequate": true },
+      { "bus": "MDP", "kV": 0.40, "utility_kA": 11.65, "motorBound_kA": 5.02, "total_kA": 16.68, "rating_kA": 50, "adequate": true },
+      { "bus": "FIRE", "kV": 0.40, "utility_kA": 15.49, "motorBound_kA": 5.02, "total_kA": 20.52, "rating_kA": 50, "adequate": true }
+    ],
+    "makingCurrentPeak": {
+      "calculatedBound_kA": 89.962,
+      "selectedClassRating_kA": 105.0,
+      "adequate": true
+    }
+  },
+  "voltageComparison": [
+    { "bus": "TA", "handCalculated_V": 402.6275, "simulated_V": 402.1385, "diffPct": 0.1216, "explanation": "Fixed 400 V hand current vs iterative constant-PQ / V² cap" },
+    { "bus": "MDB-A", "handCalculated_V": 402.2565, "simulated_V": 401.7681, "diffPct": 0.1216, "explanation": "Fixed 400 V hand current vs iterative constant-PQ / V² cap" },
+    { "bus": "F1", "handCalculated_V": 401.4028, "simulated_V": 400.9163, "diffPct": 0.1213, "explanation": "Fixed 400 V hand current vs iterative constant-PQ / V² cap" },
+    { "bus": "F2", "handCalculated_V": 401.0613, "simulated_V": 400.5746, "diffPct": 0.1215, "explanation": "Fixed 400 V hand current vs iterative constant-PQ / V² cap" },
+    { "bus": "F3", "handCalculated_V": 400.8120, "simulated_V": 400.3247, "diffPct": 0.1217, "explanation": "Fixed 400 V hand current vs iterative constant-PQ / V² cap" },
+    { "bus": "F4", "handCalculated_V": 400.4910, "simulated_V": 400.0026, "diffPct": 0.1221, "explanation": "Fixed 400 V hand current vs iterative constant-PQ / V² cap" },
+    { "bus": "F5", "handCalculated_V": 400.1700, "simulated_V": 399.6798, "diffPct": 0.1226, "explanation": "Fixed 400 V hand current vs iterative constant-PQ / V² cap" },
+    { "bus": "F6", "handCalculated_V": 399.8490, "simulated_V": 399.3566, "diffPct": 0.1233, "explanation": "Fixed 400 V hand current vs iterative constant-PQ / V² cap" },
+    { "bus": "EDB", "handCalculated_V": 401.5496, "simulated_V": 401.0630, "diffPct": 0.1213, "explanation": "Fixed 400 V hand current vs iterative constant-PQ / V² cap" },
+    { "bus": "MDP", "handCalculated_V": 400.0200, "simulated_V": 399.5286, "diffPct": 0.1230, "explanation": "Fixed 400 V hand current vs iterative constant-PQ / V² cap" }
+  ]
+}

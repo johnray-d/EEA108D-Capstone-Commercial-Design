@@ -1,0 +1,12 @@
+Tag,LoadDescription,Qty,UnitRatingKW,Efficiency,PF,DemandFactor,CoincidenceFactor,ConnectedKW,DemandKW,DemandKVAr
+LGT,General LED lighting,3000,0.04,1.00,0.95,1.00,1.00,120.00,120.00,39.44
+REC,General receptacle allowance,1200,0.15,1.00,0.90,0.60,1.00,180.00,108.00,52.31
+HVAC,VRF outdoor units (electrical input),36,12.00,1.00,0.85,0.85,0.90,432.00,330.48,204.81
+LIFT,Elevators (shaft rating),2,18.50,0.90,0.82,1.00,0.65,41.11,26.72,18.65
+WP,"Water pumps, duty/standby (shaft)",2,7.50,0.90,0.82,1.00,0.50,16.67,8.33,5.82
+FP,"Electric fire pump (shaft), fire case only",1,37.00,0.90,0.85,0.00,1.00,41.11,0.00,0.00
+IT,"IT/UPS input, includes UPS losses",2,30.00,1.00,0.95,0.90,1.00,60.00,54.00,17.75
+ESC,Escalators (shaft rating),2,7.50,0.90,0.82,0.75,1.00,16.67,12.50,8.73
+EM,"Emergency lighting, controls, security",1,20.00,1.00,0.95,1.00,1.00,20.00,20.00,6.57
+TEN,"Tenant appliances, excludes REC/HVAC/IT",12,10.00,1.00,0.85,0.65,1.00,120.00,78.00,48.34
+TOTAL,Building Aggregate,-,-,-,0.8833,-,-,1047.56,758.04,402.42

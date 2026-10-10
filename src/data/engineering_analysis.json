@@ -1,0 +1,252 @@
+{
+  "sizingInequalities": [
+    { "tag": "F1", "zone": "Retail Floor 1", "cable": "2 x 185 mm² Cu", "designA": 330.95, "breakerAT": 400, "cableDeratedA": 408.22, "status": "OK", "criterion": "Idesign (330.95 A) ≤ Ir (400 A) ≤ Iz (408.22 A)" },
+    { "tag": "F2", "zone": "Retail Floor 2", "cable": "2 x 185 mm² Cu", "designA": 330.95, "breakerAT": 400, "cableDeratedA": 408.22, "status": "OK", "criterion": "Idesign (330.95 A) ≤ Ir (400 A) ≤ Iz (408.22 A)" },
+    { "tag": "F3", "zone": "Office Floor 3", "cable": "2 x 185 mm² Cu", "designA": 311.39, "breakerAT": 400, "cableDeratedA": 408.22, "status": "OK", "criterion": "Idesign (311.39 A) ≤ Ir (400 A) ≤ Iz (408.22 A)" },
+    { "tag": "F4", "zone": "Office Floor 4", "cable": "2 x 185 mm² Cu", "designA": 311.39, "breakerAT": 400, "cableDeratedA": 408.22, "status": "OK", "criterion": "Idesign (311.39 A) ≤ Ir (400 A) ≤ Iz (408.22 A)" },
+    { "tag": "F5", "zone": "Office Floor 5", "cable": "2 x 185 mm² Cu", "designA": 311.39, "breakerAT": 400, "cableDeratedA": 408.22, "status": "OK", "criterion": "Idesign (311.39 A) ≤ Ir (400 A) ≤ Iz (408.22 A)" },
+    { "tag": "F6", "zone": "Office Floor 6", "cable": "2 x 185 mm² Cu", "designA": 311.39, "breakerAT": 400, "cableDeratedA": 408.22, "status": "OK", "criterion": "Idesign (311.39 A) ≤ Ir (400 A) ≤ Iz (408.22 A)" },
+    { "tag": "EDB", "zone": "Essential Distribution Board", "cable": "2 x 150 mm² Cu", "designA": 201.04, "breakerAT": 320, "cableDeratedA": 357.94, "status": "OK", "criterion": "Idesign (201.04 A) ≤ Ir (320 A) ≤ Iz (357.94 A)" },
+    { "tag": "MDP", "zone": "Mechanical Distribution Panel", "cable": "1 x 95 mm² Cu", "designA": 110.33, "breakerAT": 125, "cableDeratedA": 133.48, "status": "OK", "criterion": "Idesign (110.33 A) ≤ Ir (125 A) ≤ Iz (133.48 A)" },
+    { "tag": "MAIN-A", "zone": "Transformer T1 to MDB Main Bus", "cable": "10 x 300 mm² Cu / ph", "designA": 2059.38, "breakerAT": 2200, "cableDeratedA": 2777.32, "status": "OK", "criterion": "Idesign (2059.38 A) ≤ Ir (2200 A) ≤ Iz (2777.32 A)" },
+    { "tag": "FIRE", "zone": "Dedicated Fire Pump Circuit", "cable": "1 x 120 mm² Cu 3P", "designA": 87.26, "breakerAT": 200, "cableDeratedA": 155.03, "status": "OK", "criterion": "Idesign (87.26 A) ≤ Iz (155.03 A); Breaker 200 A listed, not thermally limited per fire code" },
+    { "tag": "APFC", "zone": "QC Breaker to 400 kVAr APFC Bank", "cable": "4 x 240 mm² Cu", "designA": 788.08, "breakerAT": 900, "cableDeratedA": 964.88, "status": "OK", "criterion": "Idesign 1.35xInom (788.08 A) ≤ Ir (900 A) ≤ Iz (964.88 A); Corrective action avoids 1000 AT overload" },
+    { "tag": "GEN", "zone": "Standby Generator Feeder", "cable": "3 x 240 mm² Cu", "designA": 381.43, "breakerAT": 500, "cableDeratedA": 723.66, "status": "OK", "criterion": "Idesign (381.43 A) ≤ Ir (500 A) ≤ Iz (723.66 A)" }
+  ],
+  "neutralAndPE": [
+    { "circuit": "T1-MDB", "neutralProvision": "20 x 300 mm² (200% of phase aggregate)", "peProvision": "10 x 150 mm²; main bond / earth bar lead 300 mm²", "notes": "Carries 3rd harmonic triplen zero-sequence return" },
+    { "circuit": "F1-F6 each", "neutralProvision": "4 x 185 mm² (200% of phase aggregate)", "peProvision": "2 x 120 mm²", "notes": "Protects against LED and tenant nonlinear loads" },
+    { "circuit": "EDB", "neutralProvision": "4 x 150 mm² (200% of phase aggregate)", "peProvision": "2 x 95 mm²", "notes": "Serves IT rectifiers, UPS, servers and controls" },
+    { "circuit": "MDP", "neutralProvision": "1 x 95 mm² full-size N", "peProvision": "1 x 95 mm², upsized by adiabatic check", "notes": "Adiabatic check: 50 mm² preliminary would fail" },
+    { "circuit": "Fire pump", "neutralProvision": "None for 3-phase motor (delta/star ungrounded)", "peProvision": "1 x 70 mm²", "notes": "Control supply per listed controller assembly" },
+    { "circuit": "Capacitor bank", "neutralProvision": "No power neutral; separate fused control supply", "peProvision": "4 x 120 mm² with 4 x 240 mm² phase sets", "notes": "Delta connected detuned steps" },
+    { "circuit": "Generator to emergency bus", "neutralProvision": "3 x 240 mm² full neutral", "peProvision": "3 x 120 mm²", "notes": "Switched 4-pole neutral prevents parallel grounds" }
+  ],
+  "protectionSettings": [
+    {
+      "device": "HV-01 / T1 intake",
+      "zone": "13.8 kV Intake & Transformer Primary",
+      "longTime": "51 primary pickup 65 A; 0.6 s definite backup",
+      "shortTime": "50 primary 800 A, 0.05 s; 87T differential",
+      "ground": "51N 10 A / 0.6 s; REF sensitive transformer zone",
+      "notes": "High-set 800 A clears 12x inrush envelope (627.6 A)"
+    },
+    {
+      "device": "T1 internal",
+      "zone": "1250 kVA Transformer Tank & Windings",
+      "longTime": "49 thermal alarm 90%; trip at capability curve; 87T 0.3 pu, slope 30%",
+      "shortTime": "2nd-harmonic inrush restraint 15%; 87T fast trip",
+      "ground": "REF and winding-temperature trip; sensor/control DC supply",
+      "notes": "Coordinated with Dyn11 vector group"
+    },
+    {
+      "device": "Q0 / Main LV Breaker",
+      "zone": "Main 400 V Board (MDB) Incoming",
+      "longTime": "2500 AF, Ir=2200 A; long-time 12 s at 6Ir",
+      "shortTime": "Isd=6Ir=13.2 kA, 0.30 s; I²t OFF; ZSI enabled",
+      "ground": "Ig=440 A, 0.30 s; zone restraint from floor feeders",
+      "notes": "ZSI allows 0.30 s backup without sacrificing instantaneous clearance"
+    },
+    {
+      "device": "QF1 - QF6",
+      "zone": "Floor Feeders 1 to 6",
+      "longTime": "400 AF / 400 AT; long-time 8 s at 6Ir",
+      "shortTime": "Isd=2.4 kA / 0.08 s; Ii=4.0 kA",
+      "ground": "Ig=80 A / 0.10 s",
+      "notes": "TN-S minimum earth fault screen at F6: 10,243 A >> 80 A pickup"
+    },
+    {
+      "device": "QE / EDB Feeder",
+      "zone": "Essential Distribution Board Normal Supply",
+      "longTime": "400 AF / 320 AT; 8 s at 6Ir",
+      "shortTime": "Isd=1.92 kA / 0.08 s; Ii=3.2 kA",
+      "ground": "Ig=64 A / 0.10 s; life-safety downstream coordination",
+      "notes": "Interlocked with ATS-E transfer"
+    },
+    {
+      "device": "QM / MDP Feeder",
+      "zone": "Mechanical Distribution Panel (Pumps & Lifts)",
+      "longTime": "160 AF / 125 AT; motor starts checked",
+      "shortTime": "Isd=0.75 kA / 0.08 s; Ii=1.25 kA",
+      "ground": "Ig=25 A / 0.10 s",
+      "notes": "Withstands inrush of elevator and water pump motors"
+    },
+    {
+      "device": "QC / APFC Feeder",
+      "zone": "400 kVAr Detuned Capacitor Bank",
+      "longTime": "1000 AF / 900 AT; step fuses 63 A gG",
+      "shortTime": "Capacitor-duty switching contactors; Ii per inrush study",
+      "ground": "Reactor thermal trip; discharge, overvoltage and harmonic alarm",
+      "notes": "Long-time 900 A prevents trip on 788 A harmonic-loaded continuous current"
+    },
+    {
+      "device": "QG / Generator Feeder",
+      "zone": "400 kVA Standby Generator Output",
+      "longTime": "630 AF / 500 AT; generator controller 51V",
+      "shortTime": "Isd=1.5 kA / 0.10 s; instantaneous per decrement curve",
+      "ground": "Common generator GF ALARM ONLY; tripping confined to non-fire feeders",
+      "notes": "Does not trip on ground fault to preserve fire pump continuity"
+    },
+    {
+      "device": "FP Controller / ATS",
+      "zone": "Dedicated Fire Pump Circuit (37 kW motor)",
+      "longTime": "200 A listed assembly; no ordinary thermal overload shutdown",
+      "shortTime": "600 A magnetic screen > 419 A LRA; locked-rotor per listing",
+      "ground": "Alarm earth faults only; no ordinary GF trip in fire supply",
+      "notes": "Connected upstream of Q0 main breaker directly from transformer LV stabs"
+    },
+    {
+      "device": "A2 Incomers / Tie",
+      "zone": "Alternative 2 Split Board Sections A & B",
+      "longTime": "1600 AF / 1400 AT each; Tie 1600 AF / 1400 AT",
+      "shortTime": "Isd=8.4 kA / 0.30 s; ZSI; tie normally open",
+      "ground": "280 A / 0.30 s; 3-breaker mechanical/electrical interlock",
+      "notes": "Trapped key interlock prevents parallel operation of TA and TB"
+    }
+  ],
+  "tenYearGrowth": [
+    { "year": 0, "factor": 1.000000, "demandKW": 758.04, "demandKVAr": 402.42, "uncorrectedKVA": 858.23, "switchedKVAr": 250, "pccPF": 0.9743, "t1LoadPct": 61.61, "minPanelPu": 1.0052 },
+    { "year": 1, "factor": 1.030000, "demandKW": 780.78, "demandKVAr": 414.49, "uncorrectedKVA": 883.98, "switchedKVAr": 250, "pccPF": 0.9718, "t1LoadPct": 63.64, "minPanelPu": 1.0041 },
+    { "year": 2, "factor": 1.060900, "demandKW": 804.20, "demandKVAr": 426.93, "uncorrectedKVA": 910.50, "switchedKVAr": 275, "pccPF": 0.9764, "t1LoadPct": 65.26, "minPanelPu": 1.0044 },
+    { "year": 3, "factor": 1.092727, "demandKW": 828.33, "demandKVAr": 439.73, "uncorrectedKVA": 937.81, "switchedKVAr": 275, "pccPF": 0.9738, "t1LoadPct": 67.41, "minPanelPu": 1.0033 },
+    { "year": 4, "factor": 1.125509, "demandKW": 853.18, "demandKVAr": 452.93, "uncorrectedKVA": 965.95, "switchedKVAr": 275, "pccPF": 0.9712, "t1LoadPct": 69.65, "minPanelPu": 1.0021 },
+    { "year": 5, "factor": 1.159274, "demandKW": 878.77, "demandKVAr": 466.51, "uncorrectedKVA": 994.92, "switchedKVAr": 300, "pccPF": 0.9752, "t1LoadPct": 71.46, "minPanelPu": 1.0023 },
+    { "year": 6, "factor": 1.194052, "demandKW": 905.13, "demandKVAr": 480.51, "uncorrectedKVA": 1024.77, "switchedKVAr": 300, "pccPF": 0.9726, "t1LoadPct": 73.83, "minPanelPu": 1.0010 },
+    { "year": 7, "factor": 1.229874, "demandKW": 932.29, "demandKVAr": 494.92, "uncorrectedKVA": 1055.51, "switchedKVAr": 325, "pccPF": 0.9761, "t1LoadPct": 75.80, "minPanelPu": 1.0011 },
+    { "year": 8, "factor": 1.266770, "demandKW": 960.26, "demandKVAr": 509.77, "uncorrectedKVA": 1087.18, "switchedKVAr": 325, "pccPF": 0.9734, "t1LoadPct": 78.31, "minPanelPu": 0.9998 },
+    { "year": 9, "factor": 1.304773, "demandKW": 989.06, "demandKVAr": 525.07, "uncorrectedKVA": 1119.80, "switchedKVAr": 325, "pccPF": 0.9706, "t1LoadPct": 80.92, "minPanelPu": 0.9984 },
+    { "year": 10, "factor": 1.343916, "demandKW": 1018.74, "demandKVAr": 540.82, "uncorrectedKVA": 1153.39, "switchedKVAr": 350, "pccPF": 0.9737, "t1LoadPct": 83.12, "minPanelPu": 0.9984 }
+  ],
+  "resonanceScreen": [
+    { "switchedKVAr": 25, "sscMVA": 18.859, "hr": 27.466, "status": "Separated at this step" },
+    { "switchedKVAr": 50, "sscMVA": 18.859, "hr": 19.421, "status": "Separated at this step" },
+    { "switchedKVAr": 100, "sscMVA": 18.859, "hr": 13.733, "status": "Separated at this step" },
+    { "switchedKVAr": 150, "sscMVA": 18.859, "hr": 11.213, "status": "Separated at this step" },
+    { "switchedKVAr": 200, "sscMVA": 18.859, "hr": 9.711, "status": "Separated at this step" },
+    { "switchedKVAr": 250, "sscMVA": 18.859, "hr": 8.685, "status": "Separated at this step" },
+    { "switchedKVAr": 300, "sscMVA": 18.859, "hr": 7.929, "status": "Separated at this step" },
+    { "switchedKVAr": 350, "sscMVA": 18.859, "hr": 7.341, "status": "Review - Plain shunt bank resonates near 7th harmonic" },
+    { "switchedKVAr": 400, "sscMVA": 18.859, "hr": 6.866, "status": "Review - Plain shunt bank resonates near 7th harmonic" }
+  ],
+  "detuningJustification": {
+    "problem": "At higher stages (350 - 400 kVAr), a plain shunt capacitor bank creates parallel resonance order hr = 6.87 - 7.34, dangerously close to the 7th harmonic (420 Hz). VFDs and nonlinear loads would excite excessive harmonic resonance.",
+    "solution": "7% series detuned reactors shift the series LC resonance frequency to fr = f1 / sqrt(0.07) = 60 / 0.2646 = 226.78 Hz (harmonic order 3.78). This sits cleanly below the 5th harmonic (300 Hz) and prevents harmonic amplification.",
+    "feederWarning": "Central APFC relieves upstream transformer and main bus current, but does NOT reduce reactive current in the individual floor feeders (F1 to F6)."
+  },
+  "apfcPayback": {
+    "year0": {
+      "upstreamLossSaving_kW": 1.365985,
+      "grossEnergySaved_kWh_yr": 5257.58,
+      "bankInternalLosses_kWh_yr": 6433.13,
+      "bankFeederLosses_kWh_yr": 189.26,
+      "netEnergyBalance_kWh_yr": -1364.81,
+      "netAnnualEnergyValue_PHP": -16377.69,
+      "avoidedPFPenalty_PHP": 0.0,
+      "installedBankCost_PHP": 1256375.00,
+      "verdict": "NEGATIVE ENERGY-ONLY PAYBACK at present load. Internal reactor losses (5 W/kVAr) exceed upstream I²R savings.",
+      "releasedCapacity_kVA": 96.95
+    },
+    "year10": {
+      "netEnergySaving_kWh_yr": 897.41,
+      "netAnnualEnergyValue_PHP": 10768.88,
+      "simplePayback_years": 116.67,
+      "releasedCapacity_kVA": 139.36,
+      "verdict": "Long simple payback (116.7 years). Justification is technical compliance, voltage support, and transformer thermal release, NOT bill savings."
+    }
+  },
+  "technicalEconomicComparison": {
+    "criteria": [
+      { "criterion": "Initial Cost", "a1": "PHP 28,980,670", "a2": "PHP 33,953,667", "advantage": "A1 saves PHP 4,972,997 (14.6% less)" },
+      { "criterion": "Transformer Capacity", "a1": "1 x 1250 kVA (1187.5 kVA thermal limit)", "a2": "2 x 800 kVA (1520 kVA total)", "advantage": "A2 provides 28% more total nameplate" },
+      { "criterion": "Main Feeder Sizing", "a1": "10 x 300 mm²/ph (Iz = 2777 A, Ir = 2200 A)", "a2": "6 x 300 mm²/ph each bus + tie (Iz = 1666 A, Ir = 1400 A)", "advantage": "A1 is a single consolidated board; A2 requires tie cabling" },
+      { "criterion": "Max Loading (Year 10)", "a1": "Normal: 83.12%; Low-utility fire: 88.67%", "a2": "Normal: 68.30%; N-1 Full: 131.11% (OVERLOAD)", "advantage": "A1 operates safely within rating in all cases" },
+      { "criterion": "N-1 Contingency", "a1": "No transformer N-1. Utility outage supported by generator essentials only.", "a2": "Transformer N-1 requires 45% load shedding. Retains 55% normal load.", "advantage": "A2 allows partial normal continuity during transformer maintenance" },
+      { "criterion": "Min Panel Voltage (Y10 Low)", "a1": "388.92 V (reserve leaves 384.92 V > 380 V)", "a2": "389.90 V (reserve leaves 385.90 V > 380 V)", "advantage": "Both meet 5% voltage limit; A2 slightly higher" },
+      { "criterion": "Short-Circuit Duty", "a1": "Max LV 38.09 kA (50 kA equipment specified)", "a2": "Max LV 26.91 kA (50 kA equipment specified)", "advantage": "A2 has lower fault level; both use standard 50 kA switchgear" },
+      { "criterion": "Utility Redundancy", "a1": "Single 13.8 kV utility feeder (common failure point)", "a2": "Single 13.8 kV utility feeder (common failure point)", "advantage": "Tie. Neither solves utility grid outage" },
+      { "criterion": "Budget Target Status", "a1": "Exceeds PHP 25M target by PHP 3.98M (+15.9%)", "a2": "Exceeds PHP 25M target by PHP 8.95M (+35.8%)", "advantage": "A1 has significantly smaller budget variance" },
+      { "criterion": "Weighted Decision Score", "a1": "4.05 / 5.00 (RECOMMENDED)", "a2": "3.85 / 5.00", "advantage": "Alternative 1 wins on capital cost and operational simplicity" }
+    ],
+    "decisionMatrix": {
+      "weights": { "capitalCost": 0.35, "normalCapacity": 0.20, "outageContinuity": 0.15, "maintenance": 0.15, "expansion": 0.15 },
+      "scoresA1": { "capitalCost": 5, "normalCapacity": 4, "outageContinuity": 2, "maintenance": 5, "expansion": 3 },
+      "scoresA2": { "capitalCost": 3, "normalCapacity": 5, "outageContinuity": 4, "maintenance": 3, "expansion": 5 },
+      "weightedA1": { "capitalCost": 1.75, "normalCapacity": 0.80, "outageContinuity": 0.30, "maintenance": 0.75, "expansion": 0.45, "total": 4.05 },
+      "weightedA2": { "capitalCost": 1.05, "normalCapacity": 1.00, "outageContinuity": 0.60, "maintenance": 0.45, "expansion": 0.75, "total": 3.85 }
+    }
+  },
+  "billOfMaterials": {
+    "common": [
+      { "tag": "HV-01", "description": "17.5 kV 630 A 25 kA VCB/RMU, relays, CTs/VTs, meter provision", "qty": 1, "unit_PHP": 1700000, "amount_PHP": 1700000 },
+      { "tag": "HV-C", "description": "3 x 1C 50 mm² shielded 15 kV cable, 20 m route, terminations", "qty": 1, "unit_PHP": 240000, "amount_PHP": 240000 },
+      { "tag": "P-F", "description": "400 A 50 kA floor panel assemblies", "qty": 6, "unit_PHP": 145000, "amount_PHP": 870000 },
+      { "tag": "P-E", "description": "400 A essential panel, 320 A feeder, 50 kA", "qty": 1, "unit_PHP": 170000, "amount_PHP": 170000 },
+      { "tag": "P-M", "description": "160 A frame mechanical panel, 125 A trip, 50 kA", "qty": 1, "unit_PHP": 110000, "amount_PHP": 110000 },
+      { "tag": "C-F", "description": "185 mm² Cu XLPE phase and 200% neutral cores, 2 sets x 5 cores x 300 m", "qty": 3000, "unit_PHP": 1800, "amount_PHP": 5400000 },
+      { "tag": "PE-F", "description": "120 mm² Cu floor PE, 2 conductors x 300 m", "qty": 600, "unit_PHP": 1120, "amount_PHP": 672000 },
+      { "tag": "C-E", "description": "150 mm² Cu phase/200% neutral EDB, 2 sets x 5 cores x 30 m", "qty": 300, "unit_PHP": 1420, "amount_PHP": 426000 },
+      { "tag": "PE-E", "description": "95 mm² Cu EDB PE, 2 x 30 m", "qty": 60, "unit_PHP": 900, "amount_PHP": 54000 },
+      { "tag": "C-M", "description": "95 mm² Cu mechanical 3P+N, 4 x 60 m", "qty": 240, "unit_PHP": 900, "amount_PHP": 216000 },
+      { "tag": "PE-M", "description": "95 mm² Cu mechanical PE, 60 m", "qty": 60, "unit_PHP": 900, "amount_PHP": 54000 },
+      { "tag": "FP-C", "description": "120 mm² Cu fire 3P x 35 m", "qty": 105, "unit_PHP": 1120, "amount_PHP": 117600 },
+      { "tag": "FP-PE", "description": "70 mm² Cu fire PE x 35 m", "qty": 35, "unit_PHP": 670, "amount_PHP": 23450 },
+      { "tag": "FP-ATS", "description": "200 A listed fire-pump controller/ATS, 50 kA, locked-rotor rated", "qty": 1, "unit_PHP": 650000, "amount_PHP": 650000 },
+      { "tag": "GEN", "description": "400 kVA / 320 kW diesel generator, 400 V, 60 Hz, installed accessories", "qty": 1, "unit_PHP": 2500000, "amount_PHP": 2500000 },
+      { "tag": "E-ATS", "description": "400 A four-pole essential ATS, conditional 50 kA withstand", "qty": 1, "unit_PHP": 350000, "amount_PHP": 350000 },
+      { "tag": "GEN-C", "description": "Generator/essential transfer cabling, 3 sets 240 mm² + PE", "qty": 1, "unit_PHP": 900000, "amount_PHP": 900000 },
+      { "tag": "EARTH", "description": "300 mm² main bond, earth ring, 12 rods and inspection pits", "qty": 1, "unit_PHP": 280000, "amount_PHP": 280000 },
+      { "tag": "TRAY", "description": "Separated cable tray tiers, supports, firestopping, spare capacity", "qty": 1, "unit_PHP": 500000, "amount_PHP": 500000 },
+      { "tag": "TEST", "description": "Protection tests, PF/harmonic survey, commissioning", "qty": 1, "unit_PHP": 180000, "amount_PHP": 180000 }
+    ],
+    "a1Specific": [
+      { "description": "1250 kVA Dyn11 6% transformer, taps, 49/87T protection sensors", "qty": 1, "unit_PHP": 2100000, "amount_PHP": 2100000 },
+      { "description": "2500 A MDB, 2500 AF/2200 AT ACB, 50 kA, 105 kA peak", "qty": 1, "unit_PHP": 1100000, "amount_PHP": 1100000 },
+      { "description": "300 mm² phase/200% neutral: 10 sets x 5 cores x 15 m", "qty": 750, "unit_PHP": 2850, "amount_PHP": 2137500 },
+      { "description": "150 mm² Cu PE: 10 x 15 m", "qty": 150, "unit_PHP": 1420, "amount_PHP": 213000 },
+      { "description": "400 kvar NET 400 V, 16 x 25 kvar, 7% reactors, complete feeder", "qty": 1, "unit_PHP": 950000, "amount_PHP": 950000 }
+    ],
+    "a1Totals": {
+      "materials_PHP": 21913550.00,
+      "installation_PHP": 3287032.50,
+      "contingency_PHP": 3780087.38,
+      "total_PHP": 28980669.88,
+      "budgetOverrun_PHP": 3980669.88,
+      "budgetOverrun_pct": 15.92,
+      "uncertaintyRange_PHP": [20286469, 37674871]
+    },
+    "a2Specific": [
+      { "description": "800 kVA Dyn11 6% transformer", "qty": 2, "unit_PHP": 1550000, "amount_PHP": 3100000 },
+      { "description": "1600 A sections with 1600 AF/1400 AT incomers and 1600 A tie, 50 kA", "qty": 1, "unit_PHP": 1900000, "amount_PHP": 1900000 },
+      { "description": "300 mm²: 2 x 6 sets x 5 cores x 15 m plus tie 6 x 5 x 10 m", "qty": 1200, "unit_PHP": 2850, "amount_PHP": 3420000 },
+      { "description": "150 mm²: (2 x 6 x 15 m) + (6 x 10 m)", "qty": 240, "unit_PHP": 1420, "amount_PHP": 340800 },
+      { "description": "200 kvar net bank: 16 x 12.5 kvar, 7% reactors, complete feeder", "qty": 2, "unit_PHP": 550000, "amount_PHP": 1100000 },
+      { "description": "Second transformer HV feeder/relay provision", "qty": 1, "unit_PHP": 400000, "amount_PHP": 400000 }
+    ],
+    "a2Totals": {
+      "materials_PHP": 25673850.00,
+      "installation_PHP": 3851077.50,
+      "contingency_PHP": 4428739.12,
+      "total_PHP": 33953666.62,
+      "budgetOverrun_PHP": 8953666.62,
+      "budgetOverrun_pct": 35.81,
+      "uncertaintyRange_PHP": [23767567, 44139767]
+    }
+  },
+  "lifeCycleAnalysis": {
+    "a1": {
+      "annualEnergyLoss_kWh": 50262.943,
+      "annualLossCost_PHP": 603155.31,
+      "annualMaintenance_PHP": 219135.50,
+      "lifeCyclePV_PHP": 37054042.28
+    },
+    "a2": {
+      "annualEnergyLoss_kWh": 54345.188,
+      "annualLossCost_PHP": 652142.26,
+      "annualMaintenance_PHP": 256738.50,
+      "lifeCyclePV_PHP": 42877191.92
+    },
+    "pvFactor": 9.818147,
+    "discountRate_pct": 8.0,
+    "horizon_years": 20
+  }
+}

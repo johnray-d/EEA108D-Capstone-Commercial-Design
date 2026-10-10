@@ -1,0 +1,13 @@
+Tag,CircuitDescription,LengthMeters,CableSpec,ParallelSets,ResistanceOhm,ReactanceOhm,DropPctY0,DropPctY10,LoadPctY0,LoadPctY10,BreakerRatingA,InterruptingClassKA
+MAIN-A,Transformer T1 to 2500A MDB,15,10 x 300 mm2 Cu / ph,10,0.0001185,0.0001440,0.093,0.124,39.95,53.90,2500 AF / 2200 AT,50
+F1,Retail Floor 1 Feeder,25,2 x 185 mm2 Cu / ph,2,0.0016014,0.0012000,0.159,0.213,44.98,60.79,400 AF / 400 AT,50
+F2,Retail Floor 2 Feeder,35,2 x 185 mm2 Cu / ph,2,0.0022419,0.0016800,0.222,0.299,45.01,60.85,400 AF / 400 AT,50
+F3,Office Floor 3 Feeder,45,2 x 185 mm2 Cu / ph,2,0.0028824,0.0021600,0.269,0.361,42.37,57.29,400 AF / 400 AT,50
+F4,Office Floor 4 Feeder,55,2 x 185 mm2 Cu / ph,2,0.0035230,0.0026400,0.328,0.441,42.39,57.33,400 AF / 400 AT,50
+F5,Office Floor 5 Feeder,65,2 x 185 mm2 Cu / ph,2,0.0041635,0.0031200,0.388,0.522,42.42,57.38,400 AF / 400 AT,50
+F6,Office Floor 6 Feeder,75,2 x 185 mm2 Cu / ph,2,0.0048041,0.0036000,0.448,0.602,42.44,57.42,400 AF / 400 AT,50
+EDB,Essential Distribution Board,30,2 x 150 mm2 Cu / ph,2,0.0023700,0.0014400,0.132,0.177,31.15,42.10,400 AF / 320 AT,50
+MDP,Mechanical Distribution Panel,60,1 x 95 mm2 Cu / ph,1,0.0149684,0.0057600,0.416,0.559,45.98,62.20,160 AF / 125 AT,50
+FIRE,Dedicated Fire Pump Feeder,35,1 x 120 mm2 Cu 3P,1,0.0069125,0.0033600,0.000,0.553,0.00,45.03,200 A Listed Controller,50
+APFC,400 kVAr Detuned Bank Feeder,5,4 x 240 mm2 Cu / ph,4,0.0001234,0.0001200,0.026,0.026,52.60,52.60,1000 AF / 900 AT,50
+GEN,Standby Generator Output,20,3 x 240 mm2 Cu / ph,3,0.0001646,0.0001600,-,-,38.14,52.71,630 AF / 500 AT,50
