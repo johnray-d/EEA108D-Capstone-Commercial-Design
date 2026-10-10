@@ -31,10 +31,13 @@ export const View3DBuilding: React.FC<View3DBuildingProps> = ({
   activeScenarioId
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const sceneManagerRef = useRef<BuildingSceneManager | null>(null);
 
   const [hoveredTag, setHoveredTag] = useState<string | null>(null);
   const [engineType, setEngineType] = useState<string>('Initializing...');
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [initError, setInitError] = useState<string | null>(null);
   const [showAccessibleView, setShowAccessibleView] = useState<boolean>(false);
 
   const [options, setOptions] = useState<ViewOptions3D>({
@@ -56,6 +59,7 @@ export const View3DBuilding: React.FC<View3DBuildingProps> = ({
   useEffect(() => {
     if (!canvasRef.current) return;
 
+    let isCancelled = false;
     const manager = new BuildingSceneManager(
       canvasRef.current,
       {
@@ -68,13 +72,38 @@ export const View3DBuilding: React.FC<View3DBuildingProps> = ({
     sceneManagerRef.current = manager;
 
     manager.init().then((type) => {
+      if (isCancelled) return;
       setEngineType(type);
+      setIsLoading(false);
+      // Ensure canvas adapts to layout dimensions
+      requestAnimationFrame(() => {
+        manager.resize();
+      });
+      setTimeout(() => {
+        manager.resize();
+      }, 150);
+    }).catch((err) => {
+      if (isCancelled) return;
+      console.error('Failed to init 3D engine:', err);
+      setInitError('WebGL acceleration could not be initialized. Please check your browser hardware acceleration settings or use the Accessible Schedule view.');
+      setIsLoading(false);
     });
 
     return () => {
+      isCancelled = true;
       manager.dispose();
       sceneManagerRef.current = null;
     };
+  }, []);
+
+  // ResizeObserver on the container to resize 3D viewport smoothly
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver(() => {
+      sceneManagerRef.current?.resize();
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
   }, []);
 
   // Sync React options changes to Babylon.js scene
@@ -207,10 +236,47 @@ export const View3DBuilding: React.FC<View3DBuildingProps> = ({
       </div>
 
       {/* Main 3D Canvas / Accessible View */}
-      <div className="relative flex-1 w-full h-full">
+      <div ref={containerRef} className="relative flex-1 w-full h-full min-h-0 overflow-hidden">
         {!showAccessibleView ? (
           <>
-            <canvas ref={canvasRef} className="w-full h-full outline-none block canvas-container" />
+            <canvas
+              ref={canvasRef}
+              className="w-full h-full outline-none block canvas-container"
+              style={{ width: '100%', height: '100%', display: 'block' }}
+            />
+
+            {/* Loading Indicator Overlay */}
+            {isLoading && (
+              <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-slate-950/85 backdrop-blur-sm transition-opacity">
+                <div className="relative flex items-center justify-center mb-4">
+                  <div className="w-12 h-12 rounded-full border-2 border-cyan-500/20 border-t-cyan-400 animate-spin" />
+                  <Zap className="w-5 h-5 text-cyan-400 absolute animate-pulse" />
+                </div>
+                <div className="text-sm font-semibold text-slate-100">Loading 3D Distribution System</div>
+                <div className="text-xs text-slate-400 mt-1">Initializing Babylon.js WebGL2 graphics pipeline...</div>
+                <button
+                  onClick={() => setShowAccessibleView(true)}
+                  className="mt-4 px-3 py-1.5 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
+                >
+                  Switch to Accessible Schedule View
+                </button>
+              </div>
+            )}
+
+            {/* Error Fallback */}
+            {initError && (
+              <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-slate-950/95 p-6 text-center">
+                <AlertCircle className="w-10 h-10 text-amber-400 mb-3" />
+                <div className="text-base font-semibold text-slate-100">3D View Notice</div>
+                <p className="text-xs text-slate-400 max-w-md mt-1 mb-4">{initError}</p>
+                <button
+                  onClick={() => setShowAccessibleView(true)}
+                  className="px-4 py-2 text-xs font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg"
+                >
+                  View Accessible Technical Schedule
+                </button>
+              </div>
+            )}
 
             {/* Hover Tooltip */}
             {hoveredEquipment && (

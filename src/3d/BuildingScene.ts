@@ -53,24 +53,43 @@ export class BuildingSceneManager {
   public async init(): Promise<string> {
     let engineType = 'WebGL2';
     try {
-      if (await WebGPUEngine.IsSupportedAsync) {
-        const webgpu = new WebGPUEngine(this.canvas, {
-          stencil: true,
-          antialias: true
-        });
-        await webgpu.initAsync();
-        this.engine = webgpu;
-        engineType = 'WebGPU';
+      // Check if WebGPU is supported AND glslang is loaded (needed for StandardMaterial GLSL transpilation)
+      const hasGlslang = typeof (window as any).glslang !== 'undefined';
+      if (hasGlslang && (await WebGPUEngine.IsSupportedAsync)) {
+        try {
+          const webgpu = new WebGPUEngine(this.canvas, {
+            stencil: true,
+            antialias: true
+          });
+          // Timeout WebGPU init so it never hangs
+          await Promise.race([
+            webgpu.initAsync(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('WebGPU init timeout')), 1500))
+          ]);
+          this.engine = webgpu;
+          engineType = 'WebGPU (Hardware Accelerated)';
+        } catch (gpuErr) {
+          console.warn('WebGPU init unavailable, using WebGL2:', gpuErr);
+          this.engine = new Engine(this.canvas, true, {
+            stencil: true,
+            preserveDrawingBuffer: true,
+            powerPreference: 'high-performance'
+          });
+          engineType = 'WebGL2 (Hardware Accelerated)';
+        }
       } else {
+        // Direct, instant, high-performance WebGL2 engine
         this.engine = new Engine(this.canvas, true, {
           stencil: true,
-          preserveDrawingBuffer: true
+          preserveDrawingBuffer: true,
+          powerPreference: 'high-performance'
         });
+        engineType = 'WebGL2 (Hardware Accelerated)';
       }
     } catch (e) {
-      console.warn('WebGPU init failed, falling back to WebGL2 engine:', e);
+      console.warn('Standard engine init error, falling back to basic WebGL:', e);
       this.engine = new Engine(this.canvas, true);
-      engineType = 'WebGL2 (Fallback)';
+      engineType = 'WebGL2';
     }
 
     this.scene = new Scene(this.engine);
@@ -83,6 +102,9 @@ export class BuildingSceneManager {
     this.buildFloorDistribution();
     this.buildEmergencyAndFireSystem();
     this.buildCableFeedersAndRiser();
+
+    // Ensure immediate resize so drawing buffer matches canvas client dimensions
+    this.engine.resize();
 
     // Render loop
     this.engine.runRenderLoop(() => {
@@ -97,10 +119,14 @@ export class BuildingSceneManager {
     return engineType;
   }
 
-  private onResize = () => {
+  public resize(): void {
     if (this.engine) {
       this.engine.resize();
     }
+  }
+
+  private onResize = () => {
+    this.resize();
   };
 
   private setupCamera() {
