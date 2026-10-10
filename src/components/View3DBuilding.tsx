@@ -129,63 +129,63 @@ export const View3DBuilding: React.FC<View3DBuildingProps> = ({
   const hoveredEquipment = hoveredTag ? EQUIPMENT_CATALOG[hoveredTag] : null;
 
   return (
-    <div className="relative w-full h-full flex flex-col bg-slate-950 overflow-hidden select-none">
+    <div className="relative w-full h-full flex flex-col bg-slate-100 overflow-hidden select-none">
       {/* Top Floating Control Bar */}
       <div className="absolute top-4 left-4 z-30 flex flex-wrap items-center gap-2 max-w-[calc(100%-26rem)] pointer-events-auto">
         {/* Camera View Presets */}
-        <div className="flex items-center bg-slate-900/90 backdrop-blur-md border border-slate-700/80 rounded-xl p-1 shadow-xl">
-          <span className="text-[11px] font-semibold text-slate-400 px-2 flex items-center gap-1">
-            <Compass className="w-3.5 h-3.5 text-cyan-400" />
+        <div className="flex items-center bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-xl p-1 shadow-md">
+          <span className="text-[11px] font-semibold text-slate-500 px-2 flex items-center gap-1">
+            <Compass className="w-3.5 h-3.5 text-cyan-600" />
             <span>Preset:</span>
           </span>
           <button
             onClick={() => handleCameraPreset('home')}
-            className="px-2 py-1 text-xs rounded-lg hover:bg-slate-800 text-slate-200 transition font-medium"
+            className="px-2 py-1 text-xs rounded-lg hover:bg-slate-100 text-slate-700 hover:text-slate-900 transition font-medium"
           >
             Iso / Home
           </button>
           <button
             onClick={() => handleCameraPreset('plant')}
-            className="px-2 py-1 text-xs rounded-lg hover:bg-slate-800 text-cyan-300 transition font-medium"
+            className="px-2 py-1 text-xs rounded-lg hover:bg-cyan-50 text-cyan-700 hover:text-cyan-900 transition font-medium"
           >
             Substation Plant
           </button>
           <button
             onClick={() => handleCameraPreset('riser')}
-            className="px-2 py-1 text-xs rounded-lg hover:bg-slate-800 text-slate-200 transition font-medium"
+            className="px-2 py-1 text-xs rounded-lg hover:bg-slate-100 text-slate-700 hover:text-slate-900 transition font-medium"
           >
             Riser
           </button>
           <button
             onClick={() => handleCameraPreset('retail')}
-            className="px-2 py-1 text-xs rounded-lg hover:bg-slate-800 text-slate-200 transition font-medium"
+            className="px-2 py-1 text-xs rounded-lg hover:bg-slate-100 text-slate-700 hover:text-slate-900 transition font-medium"
           >
-            Retail (L1-2)
+            Retail (L1–2)
           </button>
           <button
             onClick={() => handleCameraPreset('office')}
-            className="px-2 py-1 text-xs rounded-lg hover:bg-slate-800 text-slate-200 transition font-medium"
+            className="px-2 py-1 text-xs rounded-lg hover:bg-slate-100 text-slate-700 hover:text-slate-900 transition font-medium"
           >
-            Office (L3-6)
+            Office (L3–6)
           </button>
           <button
             onClick={() => handleCameraPreset('roof')}
-            className="px-2 py-1 text-xs rounded-lg hover:bg-slate-800 text-slate-200 transition font-medium"
+            className="px-2 py-1 text-xs rounded-lg hover:bg-slate-100 text-slate-700 hover:text-slate-900 transition font-medium"
           >
             Rooftop
           </button>
           <button
             onClick={() => handleCameraPreset('basement')}
-            className="px-2 py-1 text-xs rounded-lg hover:bg-slate-800 text-red-300 transition font-medium"
+            className="px-2 py-1 text-xs rounded-lg hover:bg-red-50 text-red-700 hover:text-red-900 transition font-medium"
           >
             Basement
           </button>
         </div>
 
         {/* Building Shell Mode Dropdown / Toggles */}
-        <div className="flex items-center bg-slate-900/90 backdrop-blur-md border border-slate-700/80 rounded-xl p-1 shadow-xl">
-          <span className="text-[11px] font-semibold text-slate-400 px-2 flex items-center gap-1">
-            <Layers className="w-3.5 h-3.5 text-indigo-400" />
+        <div className="flex items-center bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-xl p-1 shadow-md">
+          <span className="text-[11px] font-semibold text-slate-500 px-2 flex items-center gap-1">
+            <Layers className="w-3.5 h-3.5 text-indigo-600" />
             <span>Shell:</span>
           </span>
           {(['cutaway', 'normal', 'hidden'] as const).map((mode) => (
@@ -194,8 +194,8 @@ export const View3DBuilding: React.FC<View3DBuildingProps> = ({
               onClick={() => setOptions({ ...options, shellMode: mode })}
               className={`px-2 py-1 text-xs rounded-lg capitalize font-medium transition ${
                 options.shellMode === mode
-                  ? 'bg-indigo-600 text-white shadow'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               }`}
             >
               {mode}
@@ -204,9 +204,9 @@ export const View3DBuilding: React.FC<View3DBuildingProps> = ({
         </div>
 
         {/* Exploded Mode Slider */}
-        <div className="flex items-center gap-2 bg-slate-900/90 backdrop-blur-md border border-slate-700/80 rounded-xl px-3 py-1.5 shadow-xl">
-          <Sliders className="w-3.5 h-3.5 text-cyan-400" />
-          <span className="text-[11px] font-semibold text-slate-300">Exploded View:</span>
+        <div className="flex items-center gap-2 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-xl px-3 py-1.5 shadow-md">
+          <Sliders className="w-3.5 h-3.5 text-cyan-600" />
+          <span className="text-[11px] font-semibold text-slate-700">Exploded View:</span>
           <input
             type="range"
             min="0"
@@ -214,9 +214,9 @@ export const View3DBuilding: React.FC<View3DBuildingProps> = ({
             step="0.05"
             value={options.explodedOffset}
             onChange={(e) => setOptions({ ...options, explodedOffset: parseFloat(e.target.value) })}
-            className="w-24 accent-cyan-400 cursor-pointer h-1.5 bg-slate-700 rounded-lg"
+            className="w-24 accent-cyan-600 cursor-pointer h-1.5 bg-slate-200 rounded-lg"
           />
-          <span className="text-[11px] font-mono text-cyan-300 w-8">
+          <span className="text-[11px] font-mono text-cyan-700 font-bold w-8">
             {Math.round(options.explodedOffset * 100)}%
           </span>
         </div>
@@ -224,10 +224,10 @@ export const View3DBuilding: React.FC<View3DBuildingProps> = ({
         {/* Accessible Alternative View Button */}
         <button
           onClick={() => setShowAccessibleView(!showAccessibleView)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold backdrop-blur-md shadow-xl transition ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold backdrop-blur-md shadow-md transition ${
             showAccessibleView
               ? 'bg-cyan-600 border-cyan-500 text-white'
-              : 'bg-slate-900/90 border-slate-700/80 text-slate-300 hover:text-white'
+              : 'bg-white/95 border-slate-200/90 text-slate-700 hover:bg-slate-50 hover:text-slate-900'
           }`}
         >
           {showAccessibleView ? <Box className="w-3.5 h-3.5" /> : <Table className="w-3.5 h-3.5" />}
@@ -247,16 +247,16 @@ export const View3DBuilding: React.FC<View3DBuildingProps> = ({
 
             {/* Loading Indicator Overlay */}
             {isLoading && (
-              <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-slate-950/85 backdrop-blur-sm transition-opacity">
+              <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-white/85 backdrop-blur-sm transition-opacity">
                 <div className="relative flex items-center justify-center mb-4">
-                  <div className="w-12 h-12 rounded-full border-2 border-cyan-500/20 border-t-cyan-400 animate-spin" />
-                  <Zap className="w-5 h-5 text-cyan-400 absolute animate-pulse" />
+                  <div className="w-12 h-12 rounded-full border-2 border-cyan-500/20 border-t-cyan-600 animate-spin" />
+                  <Zap className="w-5 h-5 text-cyan-600 absolute animate-pulse" />
                 </div>
-                <div className="text-sm font-semibold text-slate-100">Loading 3D Distribution System</div>
-                <div className="text-xs text-slate-400 mt-1">Initializing Babylon.js WebGL2 graphics pipeline...</div>
+                <div className="text-sm font-semibold text-slate-800">Loading 3D Distribution System</div>
+                <div className="text-xs text-slate-500 mt-1">Initializing Babylon.js WebGL2 graphics pipeline...</div>
                 <button
                   onClick={() => setShowAccessibleView(true)}
-                  className="mt-4 px-3 py-1.5 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
+                  className="mt-4 px-3 py-1.5 text-xs rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition"
                 >
                   Switch to Accessible Schedule View
                 </button>
@@ -265,13 +265,13 @@ export const View3DBuilding: React.FC<View3DBuildingProps> = ({
 
             {/* Error Fallback */}
             {initError && (
-              <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-slate-950/95 p-6 text-center">
-                <AlertCircle className="w-10 h-10 text-amber-400 mb-3" />
-                <div className="text-base font-semibold text-slate-100">3D View Notice</div>
-                <p className="text-xs text-slate-400 max-w-md mt-1 mb-4">{initError}</p>
+              <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-white/95 p-6 text-center">
+                <AlertCircle className="w-10 h-10 text-amber-500 mb-3" />
+                <div className="text-base font-semibold text-slate-800">3D View Notice</div>
+                <p className="text-xs text-slate-600 max-w-md mt-1 mb-4">{initError}</p>
                 <button
                   onClick={() => setShowAccessibleView(true)}
-                  className="px-4 py-2 text-xs font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg"
+                  className="px-4 py-2 text-xs font-semibold rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white shadow-md"
                 >
                   View Accessible Technical Schedule
                 </button>
@@ -280,42 +280,42 @@ export const View3DBuilding: React.FC<View3DBuildingProps> = ({
 
             {/* Hover Tooltip */}
             {hoveredEquipment && (
-              <div className="absolute bottom-16 left-6 z-20 pointer-events-none bg-slate-900/95 backdrop-blur-md border border-slate-700 px-3.5 py-2 rounded-xl shadow-2xl text-xs max-w-sm">
+              <div className="absolute bottom-16 left-6 z-20 pointer-events-none bg-white/95 backdrop-blur-md border border-slate-200/90 px-3.5 py-2.5 rounded-xl shadow-xl text-xs max-w-sm">
                 <div className="flex items-center gap-2">
                   <span
                     className="w-2.5 h-2.5 rounded-full"
                     style={{ backgroundColor: hoveredEquipment.colorHex }}
                   />
-                  <span className="font-mono font-bold text-cyan-300">{hoveredEquipment.tag}</span>
-                  <span className="text-slate-400">({hoveredEquipment.voltageLevel})</span>
+                  <span className="font-mono font-bold text-cyan-700">{hoveredEquipment.tag}</span>
+                  <span className="text-slate-500 font-medium">({hoveredEquipment.voltageLevel})</span>
                 </div>
-                <div className="font-semibold text-slate-100 mt-0.5">{hoveredEquipment.name}</div>
-                <div className="text-[11px] text-slate-400 font-mono mt-1">{hoveredEquipment.rating}</div>
+                <div className="font-semibold text-slate-800 mt-1">{hoveredEquipment.name}</div>
+                <div className="text-[11px] text-slate-600 font-mono mt-1">{hoveredEquipment.rating}</div>
               </div>
             )}
           </>
         ) : (
           /* Accessible Non-3D View (Tabular Equipment Schedule) */
-          <div className="w-full h-full p-6 overflow-y-auto bg-slate-950 text-slate-100 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="w-full h-full p-6 overflow-y-auto bg-slate-50 text-slate-800 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <div>
-                <h2 className="text-lg font-bold text-white">Non-3D Accessible Equipment & Distribution Schedule</h2>
-                <p className="text-xs text-slate-400">
+                <h2 className="text-lg font-bold text-slate-900">Non-3D Accessible Equipment & Distribution Schedule</h2>
+                <p className="text-xs text-slate-500">
                   Full textual equivalent of the 3D model with ratings, protection, and governing equations.
                 </p>
               </div>
               <button
                 onClick={() => setShowAccessibleView(false)}
-                className="px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700"
+                className="px-3 py-1.5 text-xs bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg shadow-sm"
               >
                 Switch to 3D Canvas
               </button>
             </div>
 
-            <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/70">
+            <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="bg-slate-950/80 text-slate-400 border-b border-slate-800">
+                  <tr className="bg-slate-100 text-slate-600 border-b border-slate-200">
                     <th className="p-3 font-semibold">Tag</th>
                     <th className="p-3 font-semibold">Equipment Name</th>
                     <th className="p-3 font-semibold">Voltage</th>
@@ -325,28 +325,28 @@ export const View3DBuilding: React.FC<View3DBuildingProps> = ({
                     <th className="p-3 font-semibold">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60 font-mono text-[11.5px]">
+                <tbody className="divide-y divide-slate-100 font-mono text-[11.5px]">
                   {Object.values(EQUIPMENT_CATALOG).map((item) => (
                     <tr
                       key={item.id}
-                      className={`hover:bg-slate-800/50 transition cursor-pointer ${
-                        selectedTag === item.tag ? 'bg-indigo-950/40 text-cyan-300' : ''
+                      className={`hover:bg-slate-50 transition cursor-pointer ${
+                        selectedTag === item.tag ? 'bg-cyan-50/70 text-cyan-900 font-semibold' : ''
                       }`}
                       onClick={() => onSelectTag(item.tag)}
                     >
-                      <td className="p-3 font-bold text-cyan-400">{item.tag}</td>
-                      <td className="p-3 font-sans font-medium text-slate-200">{item.name}</td>
-                      <td className="p-3 text-slate-300">{item.voltageLevel}</td>
-                      <td className="p-3 text-slate-400 font-sans">{item.floorLevel || 'Building Plant'}</td>
-                      <td className="p-3 text-slate-300">{item.rating}</td>
-                      <td className="p-3 text-amber-300/90">{item.protectionSetting || 'N/A'}</td>
+                      <td className="p-3 font-bold text-cyan-700">{item.tag}</td>
+                      <td className="p-3 font-sans font-medium text-slate-800">{item.name}</td>
+                      <td className="p-3 text-slate-600">{item.voltageLevel}</td>
+                      <td className="p-3 text-slate-600 font-sans">{item.floorLevel || 'Building Plant'}</td>
+                      <td className="p-3 text-slate-700">{item.rating}</td>
+                      <td className="p-3 text-amber-700 font-semibold">{item.protectionSetting || 'N/A'}</td>
                       <td className="p-3">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             onSelectTag(item.tag);
                           }}
-                          className="px-2 py-1 text-[11px] rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700"
+                          className="px-2.5 py-1 text-[11px] rounded bg-slate-100 hover:bg-slate-200 text-cyan-700 border border-slate-200 font-semibold"
                         >
                           Inspect
                         </button>
@@ -364,79 +364,79 @@ export const View3DBuilding: React.FC<View3DBuildingProps> = ({
       </div>
 
       {/* Bottom Status & Visibility Controls */}
-      <div className="flex flex-wrap items-center justify-between px-4 py-2 bg-slate-900 border-t border-slate-800 text-xs text-slate-400 gap-3 z-20">
+      <div className="flex flex-wrap items-center justify-between px-4 py-2.5 bg-white border-t border-slate-200 text-xs text-slate-600 gap-3 z-20 shadow-sm">
         {/* Layer Visibility Toggles */}
         <div className="flex items-center gap-1.5 overflow-x-auto">
-          <span className="text-[11px] font-semibold text-slate-400 mr-1 flex items-center gap-1">
-            <Eye className="w-3.5 h-3.5 text-cyan-400" />
+          <span className="text-[11px] font-semibold text-slate-500 mr-1 flex items-center gap-1">
+            <Eye className="w-3.5 h-3.5 text-cyan-600" />
             <span>Visible:</span>
           </span>
           <button
             onClick={() => setOptions({ ...options, showHV: !options.showHV })}
-            className={`px-2 py-0.5 rounded text-[11px] border font-medium transition ${
+            className={`px-2.5 py-1 rounded-lg text-[11px] border font-medium transition ${
               options.showHV
-                ? 'bg-red-950/60 border-red-500/50 text-red-300'
-                : 'bg-slate-800/80 border-slate-700 text-slate-500'
+                ? 'bg-red-50 border-red-300 text-red-700 font-semibold shadow-xs'
+                : 'bg-slate-100 border-slate-200 text-slate-400'
             }`}
           >
             HV 13.8 kV
           </button>
           <button
             onClick={() => setOptions({ ...options, showTransformer: !options.showTransformer })}
-            className={`px-2 py-0.5 rounded text-[11px] border font-medium transition ${
+            className={`px-2.5 py-1 rounded-lg text-[11px] border font-medium transition ${
               options.showTransformer
-                ? 'bg-cyan-950/60 border-cyan-500/50 text-cyan-300'
-                : 'bg-slate-800/80 border-slate-700 text-slate-500'
+                ? 'bg-sky-50 border-sky-300 text-sky-700 font-semibold shadow-xs'
+                : 'bg-slate-100 border-slate-200 text-slate-400'
             }`}
           >
             Transformer
           </button>
           <button
             onClick={() => setOptions({ ...options, showLV: !options.showLV })}
-            className={`px-2 py-0.5 rounded text-[11px] border font-medium transition ${
+            className={`px-2.5 py-1 rounded-lg text-[11px] border font-medium transition ${
               options.showLV
-                ? 'bg-sky-950/60 border-sky-500/50 text-sky-300'
-                : 'bg-slate-800/80 border-slate-700 text-slate-500'
+                ? 'bg-blue-50 border-blue-300 text-blue-700 font-semibold shadow-xs'
+                : 'bg-slate-100 border-slate-200 text-slate-400'
             }`}
           >
             Main LV Board
           </button>
           <button
             onClick={() => setOptions({ ...options, showFeeders: !options.showFeeders })}
-            className={`px-2 py-0.5 rounded text-[11px] border font-medium transition ${
+            className={`px-2.5 py-1 rounded-lg text-[11px] border font-medium transition ${
               options.showFeeders
-                ? 'bg-blue-950/60 border-blue-500/50 text-blue-300'
-                : 'bg-slate-800/80 border-slate-700 text-slate-500'
+                ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-semibold shadow-xs'
+                : 'bg-slate-100 border-slate-200 text-slate-400'
             }`}
           >
             Floor Panels
           </button>
           <button
             onClick={() => setOptions({ ...options, showAPFC: !options.showAPFC })}
-            className={`px-2 py-0.5 rounded text-[11px] border font-medium transition ${
+            className={`px-2.5 py-1 rounded-lg text-[11px] border font-medium transition ${
               options.showAPFC
-                ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300'
-                : 'bg-slate-800/80 border-slate-700 text-slate-500'
+                ? 'bg-emerald-50 border-emerald-300 text-emerald-700 font-semibold shadow-xs'
+                : 'bg-slate-100 border-slate-200 text-slate-400'
             }`}
           >
             APFC Bank
           </button>
           <button
             onClick={() => setOptions({ ...options, showEmergency: !options.showEmergency })}
-            className={`px-2 py-0.5 rounded text-[11px] border font-medium transition ${
+            className={`px-2.5 py-1 rounded-lg text-[11px] border font-medium transition ${
               options.showEmergency
-                ? 'bg-amber-950/60 border-amber-500/50 text-amber-300'
-                : 'bg-slate-800/80 border-slate-700 text-slate-500'
+                ? 'bg-amber-50 border-amber-300 text-amber-700 font-semibold shadow-xs'
+                : 'bg-slate-100 border-slate-200 text-slate-400'
             }`}
           >
             Generator & Fire
           </button>
           <button
             onClick={() => setOptions({ ...options, showLoads: !options.showLoads })}
-            className={`px-2 py-0.5 rounded text-[11px] border font-medium transition ${
+            className={`px-2.5 py-1 rounded-lg text-[11px] border font-medium transition ${
               options.showLoads
-                ? 'bg-indigo-950/60 border-indigo-500/50 text-indigo-300'
-                : 'bg-slate-800/80 border-slate-700 text-slate-500'
+                ? 'bg-purple-50 border-purple-300 text-purple-700 font-semibold shadow-xs'
+                : 'bg-slate-100 border-slate-200 text-slate-400'
             }`}
           >
             Loads
@@ -445,11 +445,11 @@ export const View3DBuilding: React.FC<View3DBuildingProps> = ({
 
         {/* Render Engine & Disclaimer Badge */}
         <div className="flex items-center gap-3 text-[11px]">
-          <span className="flex items-center gap-1 text-slate-400">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Engine: <strong className="text-slate-200">{engineType}</strong></span>
+          <span className="flex items-center gap-1.5 text-slate-600 font-medium">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Engine: <strong className="text-slate-800">{engineType}</strong></span>
           </span>
-          <span className="text-slate-500 hidden md:inline">
+          <span className="text-slate-400 hidden md:inline">
             Diagrammatic visualization • Not to scale • Room placement illustrative
           </span>
         </div>

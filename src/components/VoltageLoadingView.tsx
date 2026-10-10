@@ -22,25 +22,25 @@ export const VoltageLoadingView: React.FC = () => {
   ];
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300 text-slate-100">
+    <div className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300 text-slate-900">
       {/* Header */}
-      <div className="border-b border-slate-800 pb-4">
-        <div className="flex items-center gap-2 text-cyan-400 text-xs font-semibold uppercase tracking-wider mb-1">
+      <div className="border-b border-slate-200 pb-4">
+        <div className="flex items-center gap-2 text-cyan-600 text-xs font-semibold uppercase tracking-wider mb-1">
           <Activity className="w-4 h-4" />
           <span>Section 8 • Task 4 • Voltage-Drop & Equipment Loading Analysis</span>
         </div>
-        <h1 className="text-2xl font-bold text-white">Voltage Profiles, Bus Regulation & Feeder Loading</h1>
-        <p className="text-xs text-slate-400 mt-1">
+        <h1 className="text-2xl font-bold text-slate-900">Voltage Profiles, Bus Regulation & Feeder Loading</h1>
+        <p className="text-xs text-slate-500 mt-1">
           Verification of 0.95 - 1.05 pu load voltage compliance, ≤ 3% feeder drop allowance, and thermal conductor ampacities.
         </p>
       </div>
 
       {/* Sub-navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+      <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
         <button
           onClick={() => setActiveTab('profile')}
           className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition ${
-            activeTab === 'profile' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-slate-200 bg-slate-900'
+            activeTab === 'profile' ? 'bg-cyan-600 text-white' : 'text-slate-500 hover:text-slate-800 bg-white'
           }`}
         >
           Figure 4: Voltage Profile (Low Utility)
@@ -48,7 +48,7 @@ export const VoltageLoadingView: React.FC = () => {
         <button
           onClick={() => setActiveTab('solver-table')}
           className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition ${
-            activeTab === 'solver-table' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-slate-200 bg-slate-900'
+            activeTab === 'solver-table' ? 'bg-cyan-600 text-white' : 'text-slate-500 hover:text-slate-800 bg-white'
           }`}
         >
           Table 16: Multi-Scenario Bus Voltages
@@ -56,7 +56,7 @@ export const VoltageLoadingView: React.FC = () => {
         <button
           onClick={() => setActiveTab('feeder-loading')}
           className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition ${
-            activeTab === 'feeder-loading' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-slate-200 bg-slate-900'
+            activeTab === 'feeder-loading' ? 'bg-cyan-600 text-white' : 'text-slate-500 hover:text-slate-800 bg-white'
           }`}
         >
           Table 17 & 35: Feeder Loading & Drops
@@ -64,7 +64,7 @@ export const VoltageLoadingView: React.FC = () => {
         <button
           onClick={() => setActiveTab('hand-vs-sim')}
           className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition ${
-            activeTab === 'hand-vs-sim' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-slate-200 bg-slate-900'
+            activeTab === 'hand-vs-sim' ? 'bg-cyan-600 text-white' : 'text-slate-500 hover:text-slate-800 bg-white'
           }`}
         >
           Table 36: Hand Calc vs. Python Solver Check
@@ -73,14 +73,14 @@ export const VoltageLoadingView: React.FC = () => {
 
       {/* TAB 1: Voltage Profile Chart (Figure 4) */}
       {activeTab === 'profile' && (
-        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-6 shadow-xl space-y-5">
+        <div className="bg-white/90 border border-slate-200 rounded-xl p-6 shadow-xl space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <Activity className="w-4 h-4 text-cyan-400" />
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Activity className="w-4 h-4 text-cyan-600" />
                 <span>Voltage Profile: Year 10 Low-Utility Supply (0.975 pu)</span>
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500">
                 Figure 4 (E-10): All busbars remain above the 0.95 pu limit (380 V) after 1% branch circuit reserve.
               </p>
             </div>
@@ -91,20 +91,20 @@ export const VoltageLoadingView: React.FC = () => {
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="w-4 h-0.5 bg-red-500 border border-red-500 border-dashed" />
-                <span className="text-red-400">Min Load Limit (0.950 pu = 380 V)</span>
+                <span className="text-red-600">Min Load Limit (0.950 pu = 380 V)</span>
               </span>
             </div>
           </div>
 
           {/* Bar Chart Representation of Figure 4 */}
-          <div className="bg-slate-950 p-6 rounded-xl border border-slate-800">
+          <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
             <div className="relative h-64 flex items-end justify-between gap-3 pt-6 pb-2">
               {/* 0.95 pu Threshold Line */}
               <div
                 className="absolute left-0 right-0 border-b-2 border-red-500 border-dashed z-10 flex items-center justify-end pr-2"
                 style={{ bottom: '25%' }}
               >
-                <span className="bg-red-950/80 text-red-300 font-mono text-[10px] px-1.5 py-0.5 rounded border border-red-800">
+                <span className="bg-red-50 text-red-700 font-mono text-[10px] px-1.5 py-0.5 rounded border border-red-800">
                   0.950 pu (380.0 V Limit)
                 </span>
               </div>
@@ -118,7 +118,7 @@ export const VoltageLoadingView: React.FC = () => {
 
                 return (
                   <div key={b.bus} className="flex-1 flex flex-col items-center h-full justify-end group z-20">
-                    <span className="text-[10px] font-mono text-cyan-300 mb-1 opacity-0 group-hover:opacity-100 transition whitespace-nowrap">
+                    <span className="text-[10px] font-mono text-cyan-700 mb-1 opacity-0 group-hover:opacity-100 transition whitespace-nowrap">
                       {b.v.toFixed(1)} V ({b.pu.toFixed(4)} pu)
                     </span>
                     <div
@@ -126,15 +126,15 @@ export const VoltageLoadingView: React.FC = () => {
                       style={{ height: `${heightPct}%` }}
                     />
                     <div className="text-center mt-2">
-                      <span className="text-[11px] font-mono font-bold text-slate-200 block">{b.bus}</span>
-                      <span className="text-[9.5px] font-mono text-slate-400 block">{b.v.toFixed(1)}V</span>
+                      <span className="text-[11px] font-mono font-bold text-slate-800 block">{b.bus}</span>
+                      <span className="text-[9.5px] font-mono text-slate-500 block">{b.v.toFixed(1)}V</span>
                     </div>
                   </div>
                 );
               })}
             </div>
 
-            <div className="text-[11px] text-slate-400 border-t border-slate-800 pt-3 mt-4 space-y-1">
+            <div className="text-[11px] text-slate-500 border-t border-slate-200 pt-3 mt-4 space-y-1">
               <p>
                 <strong>Critical Observation on Farthest Bus F6:</strong> At 75 m route distance, F6 solved voltage is <strong>388.92 V (0.9723 pu)</strong>. Subtracting the assumed 1% (4.0 V) downstream branch circuit wiring allowance yields <strong>384.92 V (0.9623 pu)</strong> at the tenant equipment terminals, safely maintaining the required 380 V threshold.
               </p>
@@ -145,21 +145,21 @@ export const VoltageLoadingView: React.FC = () => {
 
       {/* TAB 2: Table 16 Bus Voltages Across Scenarios */}
       {activeTab === 'solver-table' && (
-        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4">
+        <div className="bg-white/90 border border-slate-200 rounded-xl p-5 shadow-xl space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-base font-bold text-white">Table 16: Independent Solver Bus Voltages</h2>
-              <p className="text-xs text-slate-400">
+              <h2 className="text-base font-bold text-slate-900">Table 16: Independent Solver Bus Voltages</h2>
+              <p className="text-xs text-slate-500">
                 Phase-domain simulation results under different utility and APFC states.
               </p>
             </div>
-            <span className="text-xs font-mono text-slate-400">All voltages Line-to-Line (VLL)</span>
+            <span className="text-xs font-mono text-slate-500">All voltages Line-to-Line (VLL)</span>
           </div>
 
-          <div className="overflow-x-auto rounded-lg border border-slate-800">
+          <div className="overflow-x-auto rounded-lg border border-slate-200">
             <table className="w-full text-left text-xs font-mono">
               <thead>
-                <tr className="bg-slate-950 text-slate-400 border-b border-slate-800 font-semibold text-[11px]">
+                <tr className="bg-slate-50 text-slate-500 border-b border-slate-200 font-semibold text-[11px]">
                   <th className="p-3 font-sans">Bus Tag</th>
                   <th className="p-3 text-right">Present No APFC (V)</th>
                   <th className="p-3 text-right">Present Corrected (V)</th>
@@ -167,7 +167,7 @@ export const VoltageLoadingView: React.FC = () => {
                   <th className="p-3 text-right">Year 10 Low Utility (V)</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 text-[11.5px]">
+              <tbody className="divide-y divide-slate-200 text-[11.5px]">
                 {[
                   { bus: 'TA', v0_no: 398.84, v0_corr: 404.13, v10_corr: 402.14, v10_low: 391.77 },
                   { bus: 'MDB-A', v0_no: 398.46, v0_corr: 403.86, v10_corr: 401.77, v10_low: 391.39 },
@@ -181,12 +181,12 @@ export const VoltageLoadingView: React.FC = () => {
                   { bus: 'MDP (Pumps)', v0_no: 396.79, v0_corr: 402.20, v10_corr: 399.53, v10_low: 389.09 },
                   { bus: 'FIRE (Fire Pump)', v0_no: 398.84, v0_corr: 404.13, v10_corr: 402.14, v10_low: 391.77 }
                 ].map((row) => (
-                  <tr key={row.bus} className="hover:bg-slate-800/40">
-                    <td className="p-3 font-sans font-bold text-slate-200">{row.bus}</td>
-                    <td className="p-3 text-right text-slate-400">{row.v0_no.toFixed(2)}</td>
-                    <td className="p-3 text-right text-cyan-300 font-semibold">{row.v0_corr.toFixed(2)}</td>
-                    <td className="p-3 text-right text-emerald-400 font-semibold">{row.v10_corr.toFixed(2)}</td>
-                    <td className={`p-3 text-right font-bold ${row.v10_low < 390 ? 'text-amber-400' : 'text-slate-200'}`}>
+                  <tr key={row.bus} className="hover:bg-slate-100">
+                    <td className="p-3 font-sans font-bold text-slate-800">{row.bus}</td>
+                    <td className="p-3 text-right text-slate-500">{row.v0_no.toFixed(2)}</td>
+                    <td className="p-3 text-right text-cyan-700 font-semibold">{row.v0_corr.toFixed(2)}</td>
+                    <td className="p-3 text-right text-emerald-600 font-semibold">{row.v10_corr.toFixed(2)}</td>
+                    <td className={`p-3 text-right font-bold ${row.v10_low < 390 ? 'text-amber-600' : 'text-slate-800'}`}>
                       {row.v10_low.toFixed(2)}
                     </td>
                   </tr>
@@ -195,7 +195,7 @@ export const VoltageLoadingView: React.FC = () => {
             </table>
           </div>
 
-          <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs text-slate-300 leading-relaxed">
+          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs text-slate-700 leading-relaxed">
             <strong>Tap Boost Justification:</strong> In an initial trial without the 1.025 equivalent tap boost and without APFC, the Year 10 panel voltage fell to 381.20 V, leaving only 377.20 V after branch reserve (below 380 V: NOT OK). The 1.025 tap and 400 kVAr APFC maintain proper voltages above 380 V in all evaluated conditions.
           </div>
         </div>
@@ -203,16 +203,16 @@ export const VoltageLoadingView: React.FC = () => {
 
       {/* TAB 3: Table 17 & 35 Feeder Loading and Voltage Drop */}
       {activeTab === 'feeder-loading' && (
-        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4">
+        <div className="bg-white/90 border border-slate-200 rounded-xl p-5 shadow-xl space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-white">Table 17 & 35: Cable Routes, Voltage Drops and Ampacity</h2>
-            <span className="text-xs font-mono text-emerald-400">Criteria: Feeder ΔV ≤ 3%, Total Wiring ≤ 5%</span>
+            <h2 className="text-base font-bold text-slate-900">Table 17 & 35: Cable Routes, Voltage Drops and Ampacity</h2>
+            <span className="text-xs font-mono text-emerald-600">Criteria: Feeder ΔV ≤ 3%, Total Wiring ≤ 5%</span>
           </div>
 
-          <div className="overflow-x-auto rounded-lg border border-slate-800">
+          <div className="overflow-x-auto rounded-lg border border-slate-200">
             <table className="w-full text-left text-xs font-mono">
               <thead>
-                <tr className="bg-slate-950 text-slate-400 border-b border-slate-800 font-semibold text-[11px]">
+                <tr className="bg-slate-50 text-slate-500 border-b border-slate-200 font-semibold text-[11px]">
                   <th className="p-2.5 font-sans">Tag</th>
                   <th className="p-2.5">Route (m)</th>
                   <th className="p-2.5">R (Ω)</th>
@@ -224,7 +224,7 @@ export const VoltageLoadingView: React.FC = () => {
                   <th className="p-2.5 text-center font-sans">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 text-[11.5px]">
+              <tbody className="divide-y divide-slate-200 text-[11.5px]">
                 {[
                   { tag: 'F1', m: 25, r: 0.001601, x: 0.001200, dy0: 0.159, dy10: 0.213, ly0: 44.98, ly10: 60.79 },
                   { tag: 'F2', m: 35, r: 0.002242, x: 0.001680, dy0: 0.222, dy10: 0.299, ly0: 45.01, ly10: 60.85 },
@@ -235,17 +235,17 @@ export const VoltageLoadingView: React.FC = () => {
                   { tag: 'EDB', m: 30, r: 0.002370, x: 0.001440, dy0: 0.132, dy10: 0.177, ly0: 31.15, ly10: 42.10 },
                   { tag: 'MDP', m: 60, r: 0.014968, x: 0.005760, dy0: 0.416, dy10: 0.559, ly0: 45.98, ly10: 62.20 }
                 ].map((row) => (
-                  <tr key={row.tag} className="hover:bg-slate-800/40">
-                    <td className="p-2.5 font-bold font-sans text-cyan-300">{row.tag}</td>
-                    <td className="p-2.5 text-slate-300">{row.m} m</td>
-                    <td className="p-2.5 text-slate-400">{row.r.toFixed(6)}</td>
-                    <td className="p-2.5 text-slate-400">{row.x.toFixed(6)}</td>
-                    <td className="p-2.5 text-right text-slate-300">{row.dy0.toFixed(3)}%</td>
-                    <td className="p-2.5 text-right text-cyan-300 font-semibold">{row.dy10.toFixed(3)}%</td>
-                    <td className="p-2.5 text-right text-slate-300">{row.ly0.toFixed(2)}%</td>
-                    <td className="p-2.5 text-right text-emerald-400 font-semibold">{row.ly10.toFixed(2)}%</td>
+                  <tr key={row.tag} className="hover:bg-slate-100">
+                    <td className="p-2.5 font-bold font-sans text-cyan-700">{row.tag}</td>
+                    <td className="p-2.5 text-slate-700">{row.m} m</td>
+                    <td className="p-2.5 text-slate-500">{row.r.toFixed(6)}</td>
+                    <td className="p-2.5 text-slate-500">{row.x.toFixed(6)}</td>
+                    <td className="p-2.5 text-right text-slate-700">{row.dy0.toFixed(3)}%</td>
+                    <td className="p-2.5 text-right text-cyan-700 font-semibold">{row.dy10.toFixed(3)}%</td>
+                    <td className="p-2.5 text-right text-slate-700">{row.ly0.toFixed(2)}%</td>
+                    <td className="p-2.5 text-right text-emerald-600 font-semibold">{row.ly10.toFixed(2)}%</td>
                     <td className="p-2.5 text-center">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800/50">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-700 border border-emerald-800/50">
                         PASS
                       </span>
                     </td>
@@ -259,21 +259,21 @@ export const VoltageLoadingView: React.FC = () => {
 
       {/* TAB 4: Table 36 Hand Calculation vs Simulation Validation */}
       {activeTab === 'hand-vs-sim' && (
-        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4">
+        <div className="bg-white/90 border border-slate-200 rounded-xl p-5 shadow-xl space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-base font-bold text-white">Table 36: Calculated Hand Voltage vs. Simulation Solver</h2>
-              <p className="text-xs text-slate-400">
+              <h2 className="text-base font-bold text-slate-900">Table 36: Calculated Hand Voltage vs. Simulation Solver</h2>
+              <p className="text-xs text-slate-500">
                 Validation of hand equation against iterative backward/forward load-flow solver.
               </p>
             </div>
-            <span className="text-xs font-mono text-cyan-400">Maximum difference: ~0.12%</span>
+            <span className="text-xs font-mono text-cyan-600">Maximum difference: ~0.12%</span>
           </div>
 
-          <div className="overflow-x-auto rounded-lg border border-slate-800">
+          <div className="overflow-x-auto rounded-lg border border-slate-200">
             <table className="w-full text-left text-xs font-mono">
               <thead>
-                <tr className="bg-slate-950 text-slate-400 border-b border-slate-800 font-semibold text-[11px]">
+                <tr className="bg-slate-50 text-slate-500 border-b border-slate-200 font-semibold text-[11px]">
                   <th className="p-2.5 font-sans">Bus</th>
                   <th className="p-2.5 text-right">Hand Calculated (V)</th>
                   <th className="p-2.5 text-right">Simulated Solver (V)</th>
@@ -281,23 +281,23 @@ export const VoltageLoadingView: React.FC = () => {
                   <th className="p-2.5 font-sans">Explanation</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 text-[11.5px]">
+              <tbody className="divide-y divide-slate-200 text-[11.5px]">
                 {comparison.map((item) => (
-                  <tr key={item.bus} className="hover:bg-slate-800/40">
-                    <td className="p-2.5 font-bold font-sans text-cyan-300">{item.bus}</td>
-                    <td className="p-2.5 text-right text-slate-300">{item.handCalculated_V.toFixed(4)}</td>
-                    <td className="p-2.5 text-right text-emerald-400 font-semibold">{item.simulated_V.toFixed(4)}</td>
-                    <td className="p-2.5 text-right text-amber-300">{item.diffPct.toFixed(4)}%</td>
-                    <td className="p-2.5 font-sans text-slate-400 text-[11px]">{item.explanation}</td>
+                  <tr key={item.bus} className="hover:bg-slate-100">
+                    <td className="p-2.5 font-bold font-sans text-cyan-700">{item.bus}</td>
+                    <td className="p-2.5 text-right text-slate-700">{item.handCalculated_V.toFixed(4)}</td>
+                    <td className="p-2.5 text-right text-emerald-600 font-semibold">{item.simulated_V.toFixed(4)}</td>
+                    <td className="p-2.5 text-right text-amber-700">{item.diffPct.toFixed(4)}%</td>
+                    <td className="p-2.5 font-sans text-slate-500 text-[11px]">{item.explanation}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
 
-          <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs text-slate-300 space-y-1">
-            <p className="font-semibold text-cyan-300">Why the 0.12% difference occurs:</p>
-            <p className="text-slate-400 leading-relaxed text-[11.5px]">
+          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs text-slate-700 space-y-1">
+            <p className="font-semibold text-cyan-700">Why the 0.12% difference occurs:</p>
+            <p className="text-slate-500 leading-relaxed text-[11.5px]">
               The hand formula assumes a fixed 400 V base current: ΔV = (P·R + Q·X) / 400. In contrast, the numerical solver runs iterative backward/forward sweeps where constant-power loads draw slightly higher current when bus voltage drops below nominal, and capacitor reactive injection varies quadratically with |V|². The ~0.12% difference perfectly confirms numerical convergence and correct physical behavior.
             </p>
           </div>

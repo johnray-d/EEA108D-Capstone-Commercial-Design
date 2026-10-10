@@ -49,17 +49,17 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
   const isHighlighted = (tag: string) => selectedTag === tag;
 
   return (
-    <div className="flex flex-col h-full bg-slate-950 text-slate-100 border border-slate-800 rounded-lg overflow-hidden shadow-2xl">
+    <div className="flex flex-col h-full bg-slate-50 text-slate-900 border border-slate-200 rounded-lg overflow-hidden shadow-2xl">
       {/* Top Controls Bar */}
-      <div className="flex flex-wrap items-center justify-between px-4 py-2.5 bg-slate-900 border-b border-slate-800 gap-2">
+      <div className="flex flex-wrap items-center justify-between px-4 py-2.5 bg-white border-b border-slate-200 gap-2">
         <div className="flex items-center gap-2">
-          <Layers className="w-5 h-5 text-cyan-400" />
+          <Layers className="w-5 h-5 text-cyan-600" />
           <span className="font-semibold text-sm tracking-wide">Interactive Single-Line Diagram (SLD)</span>
-          <div className="flex items-center bg-slate-800 rounded-md p-0.5 border border-slate-700 ml-2">
+          <div className="flex items-center bg-slate-800 rounded-md p-0.5 border border-slate-300 ml-2">
             <button
               onClick={() => setDiagramMode('A1_final')}
               className={`px-2.5 py-1 text-xs rounded font-medium transition ${
-                diagramMode === 'A1_final' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                diagramMode === 'A1_final' ? 'bg-cyan-600 text-white shadow' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               Alternative 1 (Recommended)
@@ -67,7 +67,7 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
             <button
               onClick={() => setDiagramMode('A2_split')}
               className={`px-2.5 py-1 text-xs rounded font-medium transition ${
-                diagramMode === 'A2_split' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                diagramMode === 'A2_split' ? 'bg-cyan-600 text-white shadow' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               Alternative 2 (Split-Bus)
@@ -75,7 +75,7 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
             <button
               onClick={() => setDiagramMode('A1_prelim')}
               className={`px-2.5 py-1 text-xs rounded font-medium transition ${
-                diagramMode === 'A1_prelim' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                diagramMode === 'A1_prelim' ? 'bg-cyan-600 text-white shadow' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               Preliminary (E-01)
@@ -88,8 +88,8 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
             onClick={() => setShowProtection(!showProtection)}
             className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded border transition ${
               showProtection
-                ? 'bg-amber-950/60 border-amber-500/50 text-amber-300'
-                : 'bg-slate-800 border-slate-700 text-slate-400'
+                ? 'bg-amber-50 border-amber-500/50 text-amber-700'
+                : 'bg-slate-800 border-slate-300 text-slate-500'
             }`}
           >
             <ShieldAlert className="w-3.5 h-3.5" />
@@ -99,8 +99,8 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
             onClick={() => setShowSolvedValues(!showSolvedValues)}
             className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded border transition ${
               showSolvedValues
-                ? 'bg-cyan-950/60 border-cyan-500/50 text-cyan-300'
-                : 'bg-slate-800 border-slate-700 text-slate-400'
+                ? 'bg-cyan-50 border-cyan-500/50 text-cyan-700'
+                : 'bg-slate-800 border-slate-300 text-slate-500'
             }`}
           >
             <Zap className="w-3.5 h-3.5" />
@@ -109,21 +109,21 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
           <div className="h-4 w-px bg-slate-700 mx-1" />
           <button
             onClick={() => setZoom((z) => Math.min(z * 1.2, 2.5))}
-            className="p-1.5 bg-slate-800 hover:bg-slate-700 rounded border border-slate-700 text-slate-300"
+            className="p-1.5 bg-slate-800 hover:bg-slate-200 rounded border border-slate-300 text-slate-700"
             title="Zoom In"
           >
             <ZoomIn className="w-4 h-4" />
           </button>
           <button
             onClick={() => setZoom((z) => Math.max(z / 1.2, 0.6))}
-            className="p-1.5 bg-slate-800 hover:bg-slate-700 rounded border border-slate-700 text-slate-300"
+            className="p-1.5 bg-slate-800 hover:bg-slate-200 rounded border border-slate-300 text-slate-700"
             title="Zoom Out"
           >
             <ZoomOut className="w-4 h-4" />
           </button>
           <button
             onClick={resetView}
-            className="p-1.5 bg-slate-800 hover:bg-slate-700 rounded border border-slate-700 text-slate-300"
+            className="p-1.5 bg-slate-800 hover:bg-slate-200 rounded border border-slate-300 text-slate-700"
             title="Reset Pan/Zoom"
           >
             <RotateCcw className="w-4 h-4" />
@@ -134,7 +134,7 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
       {/* SVG Canvas Area */}
       <div
         ref={containerRef}
-        className="relative flex-1 cursor-grab active:cursor-grabbing overflow-hidden bg-slate-950"
+        className="relative flex-1 cursor-grab active:cursor-grabbing overflow-hidden bg-slate-50"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -163,17 +163,17 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
 
           {/* Grid Background */}
           <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
-            <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#1e293b" strokeWidth="0.5" strokeOpacity="0.4" />
+            <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#e2e8f0" strokeWidth="0.5" strokeOpacity="0.4" />
           </pattern>
           <rect width="100%" height="100%" fill="url(#grid)" />
 
           {/* --- TOP: Utility 13.8 kV Grid Entrance --- */}
           <g id="node-utility">
             {/* Grid Source Circle */}
-            <circle cx="500" cy="45" r="22" fill="#0f172a" stroke="#ef4444" strokeWidth="2.5" />
+            <circle cx="500" cy="45" r="22" fill="#ffffff" stroke="#ef4444" strokeWidth="2.5" />
             <path d="M 490 45 Q 495 38 500 45 T 510 45" fill="none" stroke="#ef4444" strokeWidth="2" />
             <text x="440" y="38" fill="#f87171" fontSize="12" fontWeight="bold">Utility 13.8 kV</text>
-            <text x="440" y="54" fill="#94a3b8" fontSize="10">250 MVA Fault Level (X/R = 10)</text>
+            <text x="440" y="54" fill="#475569" fontSize="10">250 MVA Fault Level (X/R = 10)</text>
 
             {/* Downward line to CT/VT Meter */}
             <line x1="500" y1="67" x2="500" y2="105" stroke="#ef4444" strokeWidth="2.5" />
@@ -195,7 +195,7 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
               filter={isHighlighted('METER') ? 'url(#glow-purple)' : undefined}
             />
             <text x="495" y="130" fill="#f97316" fontSize="14" fontWeight="bold">M</text>
-            <text x="400" y="128" fill="#cbd5e1" fontSize="11" fontWeight="500">Revenue CT/VT Meter</text>
+            <text x="400" y="128" fill="#334155" fontSize="11" fontWeight="500">Revenue CT/VT Meter</text>
 
             {/* Line to HV-01 */}
             <line x1="500" y1="143" x2="500" y2="175" stroke="#ef4444" strokeWidth="2.5" />
@@ -259,7 +259,7 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
               <line x1="466" y1="274" x2="466" y2="280" stroke="#38bdf8" strokeWidth="1.5" />
 
               <text x="530" y="260" fill="#38bdf8" fontSize="12" fontWeight="bold">T1 | 1,250 kVA</text>
-              <text x="530" y="275" fill="#94a3b8" fontSize="10">13.8 kV / 400 V | Dyn11 | 6% Z</text>
+              <text x="530" y="275" fill="#475569" fontSize="10">13.8 kV / 400 V | Dyn11 | 6% Z</text>
               {showSolvedValues && (
                 <text x="530" y="290" fill="#34d399" fontSize="10" fontWeight="bold">
                   Loading: {((activeScenario as any).transformer?.loading_pct ?? 0).toFixed(1)}% | Secondary: {activeScenario.buses['TA']?.V.toFixed(1) || '402.1'} V
@@ -279,7 +279,7 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
                 <circle cx="350" cy="255" r="16" fill="none" stroke="#ef4444" strokeWidth="2" />
                 <circle cx="350" cy="275" r="16" fill="none" stroke="#38bdf8" strokeWidth="2" />
                 <text x="260" y="260" fill="#38bdf8" fontSize="11" fontWeight="bold">TA | 800 kVA</text>
-                <text x="260" y="275" fill="#94a3b8" fontSize="9">Dyn11 | 6% Z</text>
+                <text x="260" y="275" fill="#475569" fontSize="9">Dyn11 | 6% Z</text>
                 <line x1="350" y1="291" x2="350" y2="340" stroke="#38bdf8" strokeWidth="2.5" />
               </g>
 
@@ -290,7 +290,7 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
                 <circle cx="650" cy="255" r="16" fill="none" stroke="#ef4444" strokeWidth="2" />
                 <circle cx="650" cy="275" r="16" fill="none" stroke="#38bdf8" strokeWidth="2" />
                 <text x="680" y="260" fill="#38bdf8" fontSize="11" fontWeight="bold">TB | 800 kVA</text>
-                <text x="680" y="275" fill="#94a3b8" fontSize="9">Dyn11 | 6% Z</text>
+                <text x="680" y="275" fill="#475569" fontSize="9">Dyn11 | 6% Z</text>
                 <line x1="650" y1="291" x2="650" y2="340" stroke="#38bdf8" strokeWidth="2.5" />
               </g>
             </g>
@@ -368,9 +368,9 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
 
               {/* Normally Open Tie Breaker QT */}
               <g className="cursor-pointer" onClick={() => onSelectTag('Q0')}>
-                <line x1="460" y1="410" x2="480" y2="410" stroke="#64748b" strokeWidth="2" />
-                <rect x="480" y="400" width="20" height="20" fill="#0f172a" stroke="#f59e0b" strokeWidth="2" strokeDasharray="3 2" />
-                <line x1="500" y1="410" x2="520" y2="410" stroke="#64748b" strokeWidth="2" />
+                <line x1="460" y1="410" x2="480" y2="410" stroke="#94a3b8" strokeWidth="2" />
+                <rect x="480" y="400" width="20" height="20" fill="#ffffff" stroke="#f59e0b" strokeWidth="2" strokeDasharray="3 2" />
+                <line x1="500" y1="410" x2="520" y2="410" stroke="#94a3b8" strokeWidth="2" />
                 <text x="450" y="435" fill="#f59e0b" fontSize="9" fontWeight="bold">QT 1600 AF/1400 AT (N.O. Tie)</text>
               </g>
 
@@ -413,7 +413,7 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
             </g>
 
             <text x="210" y="270" fill="#10b981" fontSize="11" fontWeight="bold">C1 | 400 kVAr NET</text>
-            <text x="210" y="285" fill="#94a3b8" fontSize="9.5">16 x 25 kVAr, 7% reactors</text>
+            <text x="210" y="285" fill="#475569" fontSize="9.5">16 x 25 kVAr, 7% reactors</text>
             {showSolvedValues && (
               <text x="210" y="300" fill="#34d399" fontSize="9.5" fontWeight="bold">
                 Switched: {activeScenario.switchedKVAr} kVAr ({activeScenario.switchedSteps} steps)
@@ -436,7 +436,7 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
               />
               <text x="744" y="146" fill="#f59e0b" fontSize="14" fontWeight="bold">G</text>
               <text x="780" y="135" fill="#fbbf24" fontSize="11" fontWeight="bold">GEN-1</text>
-              <text x="780" y="150" fill="#94a3b8" fontSize="10">400 kVA / 320 kW, 400 V</text>
+              <text x="780" y="150" fill="#475569" fontSize="10">400 kVA / 320 kW, 400 V</text>
             </g>
 
             {/* Generator Breaker QG */}
@@ -453,7 +453,7 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
               />
               <text x="770" y="195" fill="#f59e0b" fontSize="10" fontWeight="bold">QG 630 AF / 500 AT</text>
               {showProtection && (
-                <text x="770" y="208" fill="#94a3b8" fontSize="9">GF ALARM ONLY (no trip)</text>
+                <text x="770" y="208" fill="#475569" fontSize="9">GF ALARM ONLY (no trip)</text>
               )}
             </g>
 
@@ -478,7 +478,7 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
           {/* Feeder QF1 (Retail Floor 1) */}
           <g className="cursor-pointer" onClick={() => onSelectTag('P-F1')}>
             <line x1="160" y1="410" x2="160" y2="470" stroke="#0ea5e9" strokeWidth="2" />
-            <rect x="150" y="470" width="20" height="20" fill="#0f172a" stroke="#0ea5e9" strokeWidth="2" />
+            <rect x="150" y="470" width="20" height="20" fill="#ffffff" stroke="#0ea5e9" strokeWidth="2" />
             <line x1="160" y1="490" x2="160" y2="560" stroke="#0ea5e9" strokeWidth="2" />
             <rect
               x="130"
@@ -491,8 +491,8 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
               rx="4"
             />
             <text x="160" y="578" fill="#38bdf8" fontSize="10" fontWeight="bold" textAnchor="middle">F1</text>
-            <text x="160" y="591" fill="#94a3b8" fontSize="8.5" textAnchor="middle">Retail | 25m</text>
-            <text x="135" y="460" fill="#94a3b8" fontSize="8.5">QF1 400A</text>
+            <text x="160" y="591" fill="#475569" fontSize="8.5" textAnchor="middle">Retail | 25m</text>
+            <text x="135" y="460" fill="#475569" fontSize="8.5">QF1 400A</text>
             {showSolvedValues && (
               <text x="160" y="615" fill="#34d399" fontSize="8.5" textAnchor="middle">
                 {activeScenario.buses['F1']?.V.toFixed(1) || '400.9'} V
@@ -503,7 +503,7 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
           {/* Feeder QF2 (Retail Floor 2) */}
           <g className="cursor-pointer" onClick={() => onSelectTag('P-F2')}>
             <line x1="240" y1="410" x2="240" y2="470" stroke="#0ea5e9" strokeWidth="2" />
-            <rect x="230" y="470" width="20" height="20" fill="#0f172a" stroke="#0ea5e9" strokeWidth="2" />
+            <rect x="230" y="470" width="20" height="20" fill="#ffffff" stroke="#0ea5e9" strokeWidth="2" />
             <line x1="240" y1="490" x2="240" y2="560" stroke="#0ea5e9" strokeWidth="2" />
             <rect
               x="210"
@@ -516,8 +516,8 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
               rx="4"
             />
             <text x="240" y="578" fill="#38bdf8" fontSize="10" fontWeight="bold" textAnchor="middle">F2</text>
-            <text x="240" y="591" fill="#94a3b8" fontSize="8.5" textAnchor="middle">Retail | 35m</text>
-            <text x="215" y="460" fill="#94a3b8" fontSize="8.5">QF2 400A</text>
+            <text x="240" y="591" fill="#475569" fontSize="8.5" textAnchor="middle">Retail | 35m</text>
+            <text x="215" y="460" fill="#475569" fontSize="8.5">QF2 400A</text>
             {showSolvedValues && (
               <text x="240" y="615" fill="#34d399" fontSize="8.5" textAnchor="middle">
                 {activeScenario.buses['F2']?.V.toFixed(1) || '400.6'} V
@@ -528,7 +528,7 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
           {/* Feeder QF3 (Office Floor 3) */}
           <g className="cursor-pointer" onClick={() => onSelectTag('P-F3')}>
             <line x1="320" y1="410" x2="320" y2="470" stroke="#0ea5e9" strokeWidth="2" />
-            <rect x="310" y="470" width="20" height="20" fill="#0f172a" stroke="#0ea5e9" strokeWidth="2" />
+            <rect x="310" y="470" width="20" height="20" fill="#ffffff" stroke="#0ea5e9" strokeWidth="2" />
             <line x1="320" y1="490" x2="320" y2="560" stroke="#0ea5e9" strokeWidth="2" />
             <rect
               x="290"
@@ -541,8 +541,8 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
               rx="4"
             />
             <text x="320" y="578" fill="#38bdf8" fontSize="10" fontWeight="bold" textAnchor="middle">F3</text>
-            <text x="320" y="591" fill="#94a3b8" fontSize="8.5" textAnchor="middle">Office | 45m</text>
-            <text x="295" y="460" fill="#94a3b8" fontSize="8.5">QF3 400A</text>
+            <text x="320" y="591" fill="#475569" fontSize="8.5" textAnchor="middle">Office | 45m</text>
+            <text x="295" y="460" fill="#475569" fontSize="8.5">QF3 400A</text>
             {showSolvedValues && (
               <text x="320" y="615" fill="#34d399" fontSize="8.5" textAnchor="middle">
                 {activeScenario.buses['F3']?.V.toFixed(1) || '400.3'} V
@@ -553,7 +553,7 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
           {/* Feeder QF4 (Office Floor 4) */}
           <g className="cursor-pointer" onClick={() => onSelectTag('P-F4')}>
             <line x1="400" y1="410" x2="400" y2="470" stroke="#0ea5e9" strokeWidth="2" />
-            <rect x="390" y="470" width="20" height="20" fill="#0f172a" stroke="#0ea5e9" strokeWidth="2" />
+            <rect x="390" y="470" width="20" height="20" fill="#ffffff" stroke="#0ea5e9" strokeWidth="2" />
             <line x1="400" y1="490" x2="400" y2="560" stroke="#0ea5e9" strokeWidth="2" />
             <rect
               x="370"
@@ -566,8 +566,8 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
               rx="4"
             />
             <text x="400" y="578" fill="#38bdf8" fontSize="10" fontWeight="bold" textAnchor="middle">F4</text>
-            <text x="400" y="591" fill="#94a3b8" fontSize="8.5" textAnchor="middle">Office | 55m</text>
-            <text x="375" y="460" fill="#94a3b8" fontSize="8.5">QF4 400A</text>
+            <text x="400" y="591" fill="#475569" fontSize="8.5" textAnchor="middle">Office | 55m</text>
+            <text x="375" y="460" fill="#475569" fontSize="8.5">QF4 400A</text>
             {showSolvedValues && (
               <text x="400" y="615" fill="#34d399" fontSize="8.5" textAnchor="middle">
                 {activeScenario.buses['F4']?.V.toFixed(1) || '400.0'} V
@@ -578,7 +578,7 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
           {/* Feeder QF5 (Office Floor 5) */}
           <g className="cursor-pointer" onClick={() => onSelectTag('P-F5')}>
             <line x1="480" y1="410" x2="480" y2="470" stroke="#0ea5e9" strokeWidth="2" />
-            <rect x="470" y="470" width="20" height="20" fill="#0f172a" stroke="#0ea5e9" strokeWidth="2" />
+            <rect x="470" y="470" width="20" height="20" fill="#ffffff" stroke="#0ea5e9" strokeWidth="2" />
             <line x1="480" y1="490" x2="480" y2="560" stroke="#0ea5e9" strokeWidth="2" />
             <rect
               x="450"
@@ -591,8 +591,8 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
               rx="4"
             />
             <text x="480" y="578" fill="#38bdf8" fontSize="10" fontWeight="bold" textAnchor="middle">F5</text>
-            <text x="480" y="591" fill="#94a3b8" fontSize="8.5" textAnchor="middle">Office | 65m</text>
-            <text x="455" y="460" fill="#94a3b8" fontSize="8.5">QF5 400A</text>
+            <text x="480" y="591" fill="#475569" fontSize="8.5" textAnchor="middle">Office | 65m</text>
+            <text x="455" y="460" fill="#475569" fontSize="8.5">QF5 400A</text>
             {showSolvedValues && (
               <text x="480" y="615" fill="#34d399" fontSize="8.5" textAnchor="middle">
                 {activeScenario.buses['F5']?.V.toFixed(1) || '399.7'} V
@@ -603,7 +603,7 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
           {/* Feeder QF6 (Office Floor 6 - Farthest Node) */}
           <g className="cursor-pointer" onClick={() => onSelectTag('P-F6')}>
             <line x1="560" y1="410" x2="560" y2="470" stroke="#0ea5e9" strokeWidth="2" />
-            <rect x="550" y="470" width="20" height="20" fill="#0f172a" stroke="#0ea5e9" strokeWidth="2" />
+            <rect x="550" y="470" width="20" height="20" fill="#ffffff" stroke="#0ea5e9" strokeWidth="2" />
             <line x1="560" y1="490" x2="560" y2="560" stroke="#0ea5e9" strokeWidth="2" />
             <rect
               x="530"
@@ -616,8 +616,8 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
               rx="4"
             />
             <text x="560" y="578" fill="#38bdf8" fontSize="10" fontWeight="bold" textAnchor="middle">F6 (Farthest)</text>
-            <text x="560" y="591" fill="#94a3b8" fontSize="8.5" textAnchor="middle">Office | 75m</text>
-            <text x="535" y="460" fill="#94a3b8" fontSize="8.5">QF6 400A</text>
+            <text x="560" y="591" fill="#475569" fontSize="8.5" textAnchor="middle">Office | 75m</text>
+            <text x="535" y="460" fill="#475569" fontSize="8.5">QF6 400A</text>
             {showSolvedValues && (
               <text x="560" y="615" fill="#34d399" fontSize="8.5" textAnchor="middle">
                 {activeScenario.buses['F6']?.V.toFixed(1) || '399.4'} V
@@ -629,7 +629,7 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
           <g id="node-edb-feeder">
             {/* Feeder QE Breaker from MDB */}
             <line x1="660" y1="410" x2="660" y2="470" stroke="#8b5cf6" strokeWidth="2" />
-            <rect x="650" y="470" width="20" height="20" fill="#0f172a" stroke="#8b5cf6" strokeWidth="2" />
+            <rect x="650" y="470" width="20" height="20" fill="#ffffff" stroke="#8b5cf6" strokeWidth="2" />
             <text x="675" y="480" fill="#a78bfa" fontSize="9.5">QE 400 AF / 320 AT</text>
 
             {/* Normal input to ATS-E */}
@@ -665,7 +665,7 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
                 rx="4"
               />
               <text x="660" y="608" fill="#c084fc" fontSize="11" fontWeight="bold" textAnchor="middle">EDB</text>
-              <text x="660" y="622" fill="#94a3b8" fontSize="8.5" textAnchor="middle">IT / Life Safety</text>
+              <text x="660" y="622" fill="#475569" fontSize="8.5" textAnchor="middle">IT / Life Safety</text>
               {showSolvedValues && (
                 <text x="660" y="648" fill="#34d399" fontSize="8.5" textAnchor="middle">
                   {activeScenario.buses['EDB']?.V.toFixed(1) || '401.1'} V
@@ -677,7 +677,7 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
           {/* --- MECHANICAL DISTRIBUTION FEEDER QM -> MDP --- */}
           <g id="node-mdp-feeder" className="cursor-pointer" onClick={() => onSelectTag('MDP')}>
             <line x1="760" y1="410" x2="760" y2="470" stroke="#3b82f6" strokeWidth="2" />
-            <rect x="750" y="470" width="20" height="20" fill="#0f172a" stroke="#3b82f6" strokeWidth="2" />
+            <rect x="750" y="470" width="20" height="20" fill="#ffffff" stroke="#3b82f6" strokeWidth="2" />
             <text x="775" y="480" fill="#60a5fa" fontSize="9.5">QM 160 AF / 125 AT</text>
 
             <line x1="760" y1="490" x2="760" y2="590" stroke="#3b82f6" strokeWidth="2" />
@@ -692,7 +692,7 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
               rx="4"
             />
             <text x="760" y="608" fill="#60a5fa" fontSize="11" fontWeight="bold" textAnchor="middle">MDP</text>
-            <text x="760" y="622" fill="#94a3b8" fontSize="8.5" textAnchor="middle">Lifts + Pumps</text>
+            <text x="760" y="622" fill="#475569" fontSize="8.5" textAnchor="middle">Lifts + Pumps</text>
             {showSolvedValues && (
               <text x="760" y="648" fill="#34d399" fontSize="8.5" textAnchor="middle">
                 {activeScenario.buses['MDP']?.V.toFixed(1) || '399.5'} V
@@ -716,7 +716,7 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
                 rx="4"
               />
               <text x="920" y="458" fill="#f87171" fontSize="10" fontWeight="bold" textAnchor="middle">FP ATS / Controller</text>
-              <text x="920" y="472" fill="#94a3b8" fontSize="8.5" textAnchor="middle">200 A, 50 kA Listed</text>
+              <text x="920" y="472" fill="#475569" fontSize="8.5" textAnchor="middle">200 A, 50 kA Listed</text>
             </g>
 
             {/* Line to Fire Pump Motor */}
@@ -732,27 +732,27 @@ export const SingleLineDiagram: React.FC<SLDProps> = ({
               />
               <text x="914" y="586" fill="#f87171" fontSize="14" fontWeight="bold">M</text>
               <text x="920" y="615" fill="#f87171" fontSize="10" fontWeight="bold" textAnchor="middle">Fire Pump</text>
-              <text x="920" y="628" fill="#94a3b8" fontSize="8.5" textAnchor="middle">37 kW Shaft (41.1 kW)</text>
+              <text x="920" y="628" fill="#475569" fontSize="8.5" textAnchor="middle">37 kW Shaft (41.1 kW)</text>
             </g>
           </g>
 
           {/* Bottom Legend */}
           <g id="sld-legend" transform="translate(100, 715)">
-            <rect x="0" y="0" width="950" height="45" fill="#0f172a" stroke="#1e293b" rx="6" />
+            <rect x="0" y="0" width="950" height="45" fill="#ffffff" stroke="#e2e8f0" rx="6" />
             <circle cx="30" cy="22" r="6" fill="#ef4444" />
-            <text x="42" y="26" fill="#cbd5e1" fontSize="10">13.8 kV Medium Voltage</text>
+            <text x="42" y="26" fill="#334155" fontSize="10">13.8 kV Medium Voltage</text>
 
             <circle cx="190" cy="22" r="6" fill="#38bdf8" />
-            <text x="202" y="26" fill="#cbd5e1" fontSize="10">400/230 V Normal LV Supply</text>
+            <text x="202" y="26" fill="#334155" fontSize="10">400/230 V Normal LV Supply</text>
 
             <circle cx="370" cy="22" r="6" fill="#f59e0b" />
-            <text x="382" y="26" fill="#cbd5e1" fontSize="10">Standby Generator / ATS Essential</text>
+            <text x="382" y="26" fill="#334155" fontSize="10">Standby Generator / ATS Essential</text>
 
             <circle cx="590" cy="22" r="6" fill="#dc2626" />
-            <text x="602" y="26" fill="#cbd5e1" fontSize="10">Dedicated Fire Pump Circuit</text>
+            <text x="602" y="26" fill="#334155" fontSize="10">Dedicated Fire Pump Circuit</text>
 
             <circle cx="770" cy="22" r="6" fill="#10b981" />
-            <text x="782" y="26" fill="#cbd5e1" fontSize="10">400 kVAr Detuned APFC</text>
+            <text x="782" y="26" fill="#334155" fontSize="10">400 kVAr Detuned APFC</text>
           </g>
         </svg>
       </div>

@@ -38,30 +38,30 @@ export const AssumptionsStandardsView: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300 text-slate-100">
+    <div className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300 text-slate-900">
       {/* Header */}
-      <div className="border-b border-slate-800 pb-4">
-        <div className="flex items-center gap-2 text-cyan-400 text-xs font-semibold uppercase tracking-wider mb-1">
+      <div className="border-b border-slate-200 pb-4">
+        <div className="flex items-center gap-2 text-cyan-600 text-xs font-semibold uppercase tracking-wider mb-1">
           <BookOpen className="w-4 h-4" />
           <span>Sections 4, 16, 17 & Appendices • Assumptions, Standards & Source Files</span>
         </div>
-        <h1 className="text-2xl font-bold text-white">Governing Codes, Closure Register & Verifiable Package Files</h1>
-        <p className="text-xs text-slate-400 mt-1">
+        <h1 className="text-2xl font-bold text-slate-900">Governing Codes, Closure Register & Verifiable Package Files</h1>
+        <p className="text-xs text-slate-500 mt-1">
           Frozen design brief inputs, published regulatory references, commissioning action register, and downloadable model datasets.
         </p>
       </div>
 
       {/* PDF Report and Simulation Package Download Box */}
-      <div className="bg-gradient-to-r from-slate-900 to-indigo-950/60 border border-slate-700/80 rounded-2xl p-6 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <div className="bg-gradient-to-r from-slate-900 to-indigo-950/60 border border-slate-300 rounded-2xl p-6 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <FileText className="w-5 h-5 text-cyan-400" />
-            <h2 className="text-lg font-bold text-white">Attached Capstone Engineering Report (PDF)</h2>
+            <FileText className="w-5 h-5 text-cyan-600" />
+            <h2 className="text-lg font-bold text-slate-900">Attached Capstone Engineering Report (PDF)</h2>
           </div>
-          <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+          <p className="text-xs text-slate-700 max-w-2xl leading-relaxed">
             Full 63-page report: "Design and Engineering Evaluation of the Electrical Power System of a Commercial Building" (Revision 0, 10 October 2026). Includes all mathematical derivations, single-line drawings, and simulation tables.
           </p>
-          <div className="flex items-center gap-3 text-[11px] font-mono text-slate-400 pt-1">
+          <div className="flex items-center gap-3 text-[11px] font-mono text-slate-500 pt-1">
             <span>SHA-256 Checksum: 4af2946ec053642f...</span>
             <span>•</span>
             <span>File size: 2.5 MB</span>
@@ -82,49 +82,49 @@ export const AssumptionsStandardsView: React.FC = () => {
       </div>
 
       {/* Standards Hierarchy (Table 8) */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4">
-        <h3 className="text-base font-bold text-white flex items-center gap-2">
-          <Shield className="w-4 h-4 text-cyan-400" />
+      <div className="bg-white/90 border border-slate-200 rounded-xl p-5 shadow-xl space-y-4">
+        <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+          <Shield className="w-4 h-4 text-cyan-600" />
           <span>Table 8: Applicable Standards & Hierarchy of Use</span>
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
           {standards.map((std) => (
-            <div key={std.code} className="bg-slate-950 p-3.5 rounded-lg border border-slate-800 space-y-1">
+            <div key={std.code} className="bg-slate-50 p-3.5 rounded-lg border border-slate-200 space-y-1">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-cyan-400">{std.code}</span>
+                <span className="font-bold text-cyan-600">{std.code}</span>
                 <span className="text-[10px] text-slate-500 font-mono">Reference Standard</span>
               </div>
-              <h4 className="font-semibold text-slate-200 text-[11.5px]">{std.desc}</h4>
-              <p className="text-slate-400 text-[11px] leading-relaxed pt-1">{std.use}</p>
+              <h4 className="font-semibold text-slate-800 text-[11.5px]">{std.desc}</h4>
+              <p className="text-slate-500 text-[11px] leading-relaxed pt-1">{std.use}</p>
             </div>
           ))}
         </div>
       </div>
 
       {/* Closure Actions Register (Table 32) */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4">
-        <h3 className="text-base font-bold text-white flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+      <div className="bg-white/90 border border-slate-200 rounded-xl p-5 shadow-xl space-y-4">
+        <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
           <span>Table 32: Required Closure Actions Before Procurement & Commissioning</span>
         </h3>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-500">
           Identifies the necessary boundary transitions from assumed planning data to certified commissioning submittals.
         </p>
 
-        <div className="overflow-x-auto rounded-lg border border-slate-800">
+        <div className="overflow-x-auto rounded-lg border border-slate-200">
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="bg-slate-950 text-slate-400 border-b border-slate-800 font-semibold text-[11px]">
+              <tr className="bg-slate-50 text-slate-500 border-b border-slate-200 font-semibold text-[11px]">
                 <th className="p-3 w-32">Discipline / Priority</th>
                 <th className="p-3">Required Closure Action / Verification Acceptance</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 text-[11.5px]">
+            <tbody className="divide-y divide-slate-200 text-[11.5px]">
               {closureActions.map((c) => (
-                <tr key={c.priority} className="hover:bg-slate-800/40">
-                  <td className="p-3 font-bold font-mono text-cyan-300">{c.priority}</td>
-                  <td className="p-3 text-slate-300 leading-relaxed">{c.action}</td>
+                <tr key={c.priority} className="hover:bg-slate-100">
+                  <td className="p-3 font-bold font-mono text-cyan-700">{c.priority}</td>
+                  <td className="p-3 text-slate-700 leading-relaxed">{c.action}</td>
                 </tr>
               ))}
             </tbody>
@@ -133,14 +133,14 @@ export const AssumptionsStandardsView: React.FC = () => {
       </div>
 
       {/* Simulation Package Raw Data Viewer & CSV Downloads */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4">
+      <div className="bg-white/90 border border-slate-200 rounded-xl p-5 shadow-xl space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <Database className="w-4 h-4 text-indigo-400" />
+            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <Database className="w-4 h-4 text-indigo-600" />
               <span>Simulation Package Datasets & Model Files (Table 40)</span>
             </h3>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-500">
               Download structured project data or view raw model inputs.
             </p>
           </div>
@@ -149,7 +149,7 @@ export const AssumptionsStandardsView: React.FC = () => {
             <button
               onClick={() => setSelectedFile('inputs')}
               className={`px-2.5 py-1 text-xs rounded-lg font-medium transition ${
-                selectedFile === 'inputs' ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
+                selectedFile === 'inputs' ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-500 hover:text-white'
               }`}
             >
               design_inputs.json
@@ -157,7 +157,7 @@ export const AssumptionsStandardsView: React.FC = () => {
             <button
               onClick={() => setSelectedFile('results')}
               className={`px-2.5 py-1 text-xs rounded-lg font-medium transition ${
-                selectedFile === 'results' ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
+                selectedFile === 'results' ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-500 hover:text-white'
               }`}
             >
               calculated_results.json
@@ -165,7 +165,7 @@ export const AssumptionsStandardsView: React.FC = () => {
             <button
               onClick={() => setSelectedFile('analysis')}
               className={`px-2.5 py-1 text-xs rounded-lg font-medium transition ${
-                selectedFile === 'analysis' ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
+                selectedFile === 'analysis' ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-500 hover:text-white'
               }`}
             >
               engineering_analysis.json
@@ -185,16 +185,16 @@ export const AssumptionsStandardsView: React.FC = () => {
           ].map((csv) => (
             <span
               key={csv.name}
-              className="text-[11px] font-mono px-2.5 py-1 rounded bg-slate-950 border border-slate-800 text-slate-300 flex items-center gap-1.5"
+              className="text-[11px] font-mono px-2.5 py-1 rounded bg-slate-50 border border-slate-200 text-slate-700 flex items-center gap-1.5"
             >
-              <Code className="w-3 h-3 text-cyan-400" />
+              <Code className="w-3 h-3 text-cyan-600" />
               <span>{csv.name}</span>
             </span>
           ))}
         </div>
 
         {/* JSON Viewer */}
-        <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 max-h-96 overflow-y-auto">
+        <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 max-h-96 overflow-y-auto">
           <pre className="text-[11px] font-mono text-cyan-200/90 leading-relaxed whitespace-pre-wrap">
             {JSON.stringify(
               selectedFile === 'inputs'

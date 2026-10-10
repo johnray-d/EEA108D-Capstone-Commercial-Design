@@ -22,35 +22,35 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedTag, onC
     calculatedResult: 'Calculated in solver model',
     reportSection: 'Sections 6-10',
     whyThisMatters: 'Integral component of the commercial building power system.',
-    colorHex: '#38bdf8'
+    colorHex: '#0284c7'
   };
 
   return (
-    <div className="absolute top-4 right-4 w-96 max-h-[calc(100vh-2rem)] bg-slate-900/95 backdrop-blur-md border border-slate-700/80 rounded-xl shadow-2xl flex flex-col z-50 overflow-hidden animate-in fade-in slide-in-from-right-4 duration-200">
+    <div className="absolute top-4 right-4 w-96 max-h-[calc(100vh-2rem)] bg-white/98 backdrop-blur-md border border-slate-200/90 rounded-xl shadow-2xl flex flex-col z-50 overflow-hidden animate-in fade-in slide-in-from-right-4 duration-200">
       {/* Header */}
-      <div className="flex items-start justify-between p-4 border-b border-slate-800 bg-slate-950/70">
+      <div className="flex items-start justify-between p-4 border-b border-slate-200 bg-slate-50/90">
         <div className="flex items-center gap-3">
           <div
-            className="w-4 h-4 rounded-full shadow-sm flex-shrink-0"
+            className="w-4 h-4 rounded-full shadow-xs flex-shrink-0"
             style={{ backgroundColor: equipment.colorHex }}
           />
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-mono font-bold text-xs px-2 py-0.5 rounded bg-slate-800 text-cyan-300 border border-slate-700">
+              <span className="font-mono font-bold text-xs px-2 py-0.5 rounded bg-slate-100 text-cyan-800 border border-slate-200">
                 {equipment.tag}
               </span>
-              <span className="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400">
+              <span className="text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-medium">
                 {equipment.voltageLevel}
               </span>
             </div>
-            <h3 className="font-bold text-sm text-slate-100 mt-1 leading-snug">
+            <h3 className="font-bold text-sm text-slate-900 mt-1 leading-snug">
               {equipment.name}
             </h3>
           </div>
         </div>
         <button
           onClick={onClose}
-          className="text-slate-400 hover:text-slate-200 p-1 rounded-lg hover:bg-slate-800 transition"
+          className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition"
           title="Close Inspector"
         >
           <X className="w-4 h-4" />
@@ -58,53 +58,53 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedTag, onC
       </div>
 
       {/* Body with scrolling */}
-      <div className="p-4 overflow-y-auto space-y-4 text-xs text-slate-300">
+      <div className="p-4 overflow-y-auto space-y-4 text-xs text-slate-700">
         {equipment.floorLevel && (
-          <div className="flex items-center justify-between text-slate-400 pb-2 border-b border-slate-800/80">
+          <div className="flex items-center justify-between text-slate-500 pb-2 border-b border-slate-200">
             <span>Location:</span>
-            <span className="font-medium text-slate-200">{equipment.floorLevel}</span>
+            <span className="font-semibold text-slate-800">{equipment.floorLevel}</span>
           </div>
         )}
 
         {/* Selected Design & Equipment Rating */}
         <div>
-          <div className="flex items-center gap-1.5 text-cyan-400 font-semibold mb-1">
+          <div className="flex items-center gap-1.5 text-cyan-700 font-semibold mb-1">
             <Cpu className="w-3.5 h-3.5" />
             <span>Selected Design & Rating</span>
           </div>
-          <div className="bg-slate-950/70 p-2.5 rounded-lg border border-slate-800 space-y-1.5">
-            <p className="font-medium text-slate-100">{equipment.selectedDesign}</p>
-            <p className="text-slate-400 font-mono text-[11px]">{equipment.rating}</p>
+          <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 space-y-1">
+            <p className="font-semibold text-slate-900">{equipment.selectedDesign}</p>
+            <p className="text-slate-600 font-mono text-[11px]">{equipment.rating}</p>
           </div>
         </div>
 
         {/* Assumed Input vs Calculated Result */}
         <div className="grid grid-cols-1 gap-2.5">
-          <div className="bg-slate-950/50 p-2.5 rounded-lg border border-slate-800">
-            <div className="flex items-center gap-1 text-amber-400 font-semibold mb-1">
-              <AlertCircle className="w-3.5 h-3.5" />
+          <div className="bg-amber-50/70 p-2.5 rounded-lg border border-amber-200">
+            <div className="flex items-center gap-1 text-amber-800 font-semibold mb-1">
+              <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
               <span>Assumed Input (Design Brief)</span>
             </div>
-            <p className="text-slate-300 leading-relaxed">{equipment.assumedInput}</p>
+            <p className="text-amber-900 leading-relaxed text-[11.5px]">{equipment.assumedInput}</p>
           </div>
 
-          <div className="bg-slate-950/50 p-2.5 rounded-lg border border-slate-800">
-            <div className="flex items-center gap-1 text-emerald-400 font-semibold mb-1">
-              <Shield className="w-3.5 h-3.5" />
+          <div className="bg-emerald-50/70 p-2.5 rounded-lg border border-emerald-200">
+            <div className="flex items-center gap-1 text-emerald-800 font-semibold mb-1">
+              <Shield className="w-3.5 h-3.5 text-emerald-600" />
               <span>Calculated / Simulation Result</span>
             </div>
-            <p className="text-slate-300 leading-relaxed">{equipment.calculatedResult}</p>
+            <p className="text-emerald-900 leading-relaxed text-[11.5px]">{equipment.calculatedResult}</p>
           </div>
         </div>
 
         {/* Protection Setting (if available) */}
         {equipment.protectionSetting && (
           <div>
-            <div className="flex items-center gap-1.5 text-amber-400 font-semibold mb-1">
-              <Shield className="w-3.5 h-3.5" />
+            <div className="flex items-center gap-1.5 text-amber-800 font-semibold mb-1">
+              <Shield className="w-3.5 h-3.5 text-amber-600" />
               <span>Preliminary Protection Setting</span>
             </div>
-            <div className="bg-amber-950/20 p-2.5 rounded-lg border border-amber-900/40 text-amber-200 font-mono text-[11px] leading-relaxed">
+            <div className="bg-amber-50 p-2.5 rounded-lg border border-amber-200 text-amber-900 font-mono text-[11px] leading-relaxed">
               {equipment.protectionSetting}
             </div>
           </div>
@@ -112,32 +112,32 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedTag, onC
 
         {/* Formula Note */}
         {equipment.formulaNote && (
-          <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
-            <div className="flex items-center gap-1.5 text-sky-400 font-semibold mb-1">
-              <BookOpen className="w-3.5 h-3.5" />
+          <div className="bg-sky-50/80 p-2.5 rounded-lg border border-sky-200">
+            <div className="flex items-center gap-1.5 text-sky-800 font-semibold mb-1">
+              <BookOpen className="w-3.5 h-3.5 text-sky-600" />
               <span>Governing Calculation Formula</span>
             </div>
-            <p className="font-mono text-[11px] text-sky-200 leading-relaxed bg-slate-900/80 p-2 rounded">
+            <p className="font-mono text-[11px] text-sky-950 leading-relaxed bg-white/80 p-2 rounded border border-sky-100">
               {equipment.formulaNote}
             </p>
           </div>
         )}
 
         {/* Why This Matters (Expandable Educational Context) */}
-        <div className="bg-indigo-950/30 p-3 rounded-lg border border-indigo-900/40">
-          <div className="flex items-center gap-1.5 text-indigo-300 font-semibold mb-1">
-            <HelpCircle className="w-3.5 h-3.5 text-indigo-400" />
+        <div className="bg-indigo-50/70 p-3 rounded-lg border border-indigo-200">
+          <div className="flex items-center gap-1.5 text-indigo-900 font-semibold mb-1">
+            <HelpCircle className="w-3.5 h-3.5 text-indigo-600" />
             <span>Why This Matters (Educational Context)</span>
           </div>
-          <p className="text-indigo-100/90 leading-relaxed text-[11.5px]">
+          <p className="text-indigo-950 leading-relaxed text-[11.5px]">
             {equipment.whyThisMatters}
           </p>
         </div>
 
         {/* Report Reference */}
-        <div className="pt-2 border-t border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
+        <div className="pt-2 border-t border-slate-200 text-[11px] text-slate-500 flex items-center justify-between">
           <span>Report Citation:</span>
-          <span className="font-semibold text-slate-300">{equipment.reportSection}</span>
+          <span className="font-semibold text-slate-800">{equipment.reportSection}</span>
         </div>
       </div>
     </div>

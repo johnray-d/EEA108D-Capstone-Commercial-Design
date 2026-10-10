@@ -44,24 +44,24 @@ export const App: React.FC = () => {
   ];
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-950 text-slate-100 font-sans">
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-100 text-slate-800 font-sans">
       {/* Top Main Navigation Header */}
-      <header className="flex items-center justify-between px-4 py-2 bg-slate-900 border-b border-slate-800 z-40 select-none">
+      <header className="flex items-center justify-between px-4 py-2.5 bg-white border-b border-slate-200 z-40 select-none shadow-xs">
         {/* Brand & Project Identity */}
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-cyan-600/30">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-600 to-indigo-600 flex items-center justify-center shadow-md shadow-cyan-600/20">
             <Zap className="w-5 h-5 text-white" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-sm text-white tracking-tight">
+              <span className="font-extrabold text-sm text-slate-900 tracking-tight">
                 EEA108D Power System Design
               </span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800/60 hidden sm:inline">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-50 text-cyan-800 border border-cyan-200 font-semibold hidden sm:inline">
                 Capstone Group 1
               </span>
             </div>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[11px] text-slate-500">
               Commercial Building Electrical Power System • Mapua University
             </p>
           </div>
@@ -77,8 +77,8 @@ export const App: React.FC = () => {
                 onClick={() => setCurrentView(item.id)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition ${
                   isActive
-                    ? 'bg-cyan-600/90 text-white shadow-md shadow-cyan-600/20'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/70'
+                    ? 'bg-cyan-600 text-white shadow-sm shadow-cyan-600/30'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                 }`}
               >
                 {item.icon}
@@ -92,7 +92,7 @@ export const App: React.FC = () => {
         <div className="lg:hidden flex items-center">
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white"
+            className="p-1.5 rounded-lg bg-slate-100 text-slate-700 hover:text-slate-900 hover:bg-slate-200"
           >
             {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -101,7 +101,7 @@ export const App: React.FC = () => {
 
       {/* Mobile Drawer Menu */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden bg-slate-900 border-b border-slate-800 p-3 space-y-1 z-50">
+        <div className="lg:hidden bg-white border-b border-slate-200 p-3 space-y-1 z-50 shadow-md">
           {navItems.map((item) => (
             <button
               key={item.id}
@@ -110,7 +110,7 @@ export const App: React.FC = () => {
                 setIsMobileMenuOpen(false);
               }}
               className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg transition ${
-                currentView === item.id ? 'bg-cyan-600 text-white' : 'text-slate-300 hover:bg-slate-800'
+                currentView === item.id ? 'bg-cyan-600 text-white' : 'text-slate-700 hover:bg-slate-100'
               }`}
             >
               {item.icon}
