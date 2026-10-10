@@ -364,23 +364,23 @@ export class BuildingSceneManager {
     for (let f = 1; f <= 2; f++) {
       const y = f * floorHeight + 0.05;
 
-      // Suspended black industrial track lighting rails in ceiling
-      const trackMat = this.createMaterial(`trackMat_L${f}`, new Color3(0.18, 0.20, 0.24));
-      const track1 = MeshBuilder.CreateBox(`track1_L${f}`, { width: 10, height: 0.05, depth: 0.06 }, this.scene);
-      track1.position = new Vector3(0, y + 2.5, -1.5);
+      // Surface-mounted industrial track lighting rails flush under ceiling
+      const trackMat = this.createMaterial(`trackMat_L${f}`, new Color3(0.22, 0.24, 0.28));
+      const track1 = MeshBuilder.CreateBox(`track1_L${f}`, { width: 7.0, height: 0.04, depth: 0.05 }, this.scene);
+      track1.position = new Vector3(0, y + 2.68, -1.5);
       track1.material = trackMat;
       this.floorMeshes.push(track1);
 
-      const track2 = MeshBuilder.CreateBox(`track2_L${f}`, { width: 10, height: 0.05, depth: 0.06 }, this.scene);
-      track2.position = new Vector3(0, y + 2.5, 1.5);
+      const track2 = MeshBuilder.CreateBox(`track2_L${f}`, { width: 7.0, height: 0.04, depth: 0.05 }, this.scene);
+      track2.position = new Vector3(0, y + 2.68, 1.5);
       track2.material = trackMat;
       this.floorMeshes.push(track2);
 
       // Track spotlights along the rails
-      for (let s = -3; s <= 3; s += 1.5) {
-        const spot = MeshBuilder.CreateCylinder(`spot_L${f}_${s}`, { diameter: 0.14, height: 0.2 }, this.scene);
-        spot.position = new Vector3(s, y + 2.4, 1.5);
-        spot.material = this.createMaterial(`mat_spot_${f}_${s}`, new Color3(0.9, 0.85, 0.4), 0.8, 48, 1.0, new Color3(0.3, 0.28, 0.1));
+      for (let s = -2.5; s <= 2.5; s += 1.25) {
+        const spot = MeshBuilder.CreateCylinder(`spot_L${f}_${s}`, { diameter: 0.12, height: 0.15 }, this.scene);
+        spot.position = new Vector3(s, y + 2.58, 1.5);
+        spot.material = this.createMaterial(`mat_spot_${f}_${s}`, new Color3(0.9, 0.85, 0.4), 0.8, 48, 1.0, new Color3(0.25, 0.22, 0.08));
         this.floorMeshes.push(spot);
       }
 
@@ -397,21 +397,26 @@ export class BuildingSceneManager {
       });
     }
 
-    // Escalator architectural void / structural opening between Level 1 and Level 2
+    // Escalator structural truss connecting Level 1 (Retail) to Level 2 (Retail)
     const escAngle = -Math.PI / 6;
     const escMat = this.createMaterial('escMat', new Color3(0.3, 0.33, 0.38), 0.6, 40);
     const escalatorTruss = MeshBuilder.CreateBox('escalator_truss', { width: 1.2, height: 0.35, depth: 4.8 }, this.scene);
-    escalatorTruss.position = new Vector3(3.2, 1.4 + floorHeight / 2, 0);
+    escalatorTruss.position = new Vector3(3.2, 4.2, 0);
     escalatorTruss.rotation.x = escAngle;
     escalatorTruss.material = escMat;
     this.floorMeshes.push(escalatorTruss);
 
     // Glass balustrades on escalator
     const escGlass = MeshBuilder.CreateBox('escalator_glass', { width: 1.25, height: 0.7, depth: 4.8 }, this.scene);
-    escGlass.position = new Vector3(3.2, 1.8 + floorHeight / 2, 0);
+    escGlass.position = new Vector3(3.2, 4.6, 0);
     escGlass.rotation.x = escAngle;
     escGlass.material = this.createMaterial('mat_esc_glass', new Color3(0.75, 0.88, 0.98), 0.8, 64, 0.4);
     this.floorMeshes.push(escGlass);
+    
+    [escalatorTruss, escGlass].forEach((mesh) => {
+      this.originalPositions.set(mesh, mesh.position.clone());
+      this.explodedOffsets.set(mesh, new Vector3(0, 1.5 * 2.2, 0));
+    });
   }
 
   /**
@@ -1004,19 +1009,40 @@ export class BuildingSceneManager {
   private buildCableFeedersAndRiser() {
     const floorHeight = 2.8;
 
-    // Vertical Riser Shaft Cable Ladder
-    const riserMat = this.createMaterial('mat_riser', new Color3(0.55, 0.60, 0.68), 0.4, 28);
+    // Vertical Riser Shaft Cable Ladder (Galvanized Steel)
+    const riserMat = this.createMaterial('mat_riser', new Color3(0.52, 0.56, 0.62), 0.4, 28);
     const riserHeight = 7 * floorHeight + 2.5;
 
-    const railL = MeshBuilder.CreateBox('RISER_railL', { width: 0.08, height: riserHeight, depth: 0.12 }, this.scene);
-    railL.position = new Vector3(-3.0, riserHeight / 2 - 2.5, -0.2);
+    // Cable ladder side rails: width = 0.8m, centered at x = -2.5, z = -0.2
+    const railL = MeshBuilder.CreateBox('RISER_railL', { width: 0.06, height: riserHeight, depth: 0.08 }, this.scene);
+    railL.position = new Vector3(-2.9, riserHeight / 2 - 2.5, -0.2);
     railL.material = riserMat;
 
-    const railR = MeshBuilder.CreateBox('RISER_railR', { width: 0.08, height: riserHeight, depth: 0.12 }, this.scene);
-    railR.position = new Vector3(-2.0, riserHeight / 2 - 2.5, -0.2);
+    const railR = MeshBuilder.CreateBox('RISER_railR', { width: 0.06, height: riserHeight, depth: 0.08 }, this.scene);
+    railR.position = new Vector3(-2.1, riserHeight / 2 - 2.5, -0.2);
     railR.material = riserMat;
 
     this.shellMeshes.push(railL, railR);
+
+    // Cable ladder rungs spaced every 0.5m
+    for (let ry = 0.5; ry < riserHeight; ry += 0.5) {
+      const rung = MeshBuilder.CreateBox(`RISER_rung_${Math.round(ry * 10)}`, { width: 0.8, height: 0.03, depth: 0.03 }, this.scene);
+      rung.position = new Vector3(-2.5, ry, -0.2);
+      rung.material = riserMat;
+      this.shellMeshes.push(rung);
+    }
+
+    // Overhead Cable Tray from MDB to Riser (Galvanized perforated tray)
+    const trayMat = this.createMaterial('mat_tray', new Color3(0.55, 0.60, 0.66), 0.4, 30);
+    // Tray along X from MDB (x = -1.5) to Riser (x = -2.5) at y = 2.52, z = -2.2
+    const trayX = MeshBuilder.CreateBox('TRAY_MDB_X', { width: 1.2, height: 0.08, depth: 0.35 }, this.scene);
+    trayX.position = new Vector3(-2.0, 2.52, -2.2);
+    trayX.material = trayMat;
+    // Tray along Z from z = -2.2 to riser at z = -0.2
+    const trayZ = MeshBuilder.CreateBox('TRAY_MDB_Z', { width: 0.35, height: 0.08, depth: 2.1 }, this.scene);
+    trayZ.position = new Vector3(-2.5, 2.52, -1.2);
+    trayZ.material = trayMat;
+    this.shellMeshes.push(trayX, trayZ);
 
     // Floor Distribution Panels (P-F1 to P-F6) mounted on columns next to riser
     for (let f = 1; f <= 6; f++) {
@@ -1025,12 +1051,12 @@ export class BuildingSceneManager {
       const tag = `P-F${f}`;
 
       const panelColor = isRetail ? new Color3(0.1, 0.65, 0.75) : new Color3(0.12, 0.52, 0.85);
-      const panel = MeshBuilder.CreateBox(`${tag}_box`, { width: 0.95, height: 1.35, depth: 0.4 }, this.scene);
-      panel.position = new Vector3(-2.5, y + 1.25, 0.5);
+      const panel = MeshBuilder.CreateBox(`${tag}_box`, { width: 0.95, height: 1.35, depth: 0.35 }, this.scene);
+      panel.position = new Vector3(-2.5, y + 1.25, 0.4);
       panel.material = this.createMaterial(`mat_${tag}`, panelColor, 0.4, 32);
 
       const subMeter = MeshBuilder.CreatePlane(`${tag}_meter`, { width: 0.35, height: 0.2 }, this.scene);
-      subMeter.position = new Vector3(-2.5, y + 1.6, 0.71);
+      subMeter.position = new Vector3(-2.5, y + 1.6, 0.58);
       subMeter.material = this.createMaterial(`mat_${tag}_meter`, new Color3(0.1, 0.9, 0.85), 0.8, 64, 1.0, new Color3(0.05, 0.3, 0.28));
 
       this.registerEquipment(tag, [panel, subMeter], new Vector3(0, f * 2.2, 0));
@@ -1053,15 +1079,15 @@ export class BuildingSceneManager {
 
     this.registerEquipment('EDB', [edbPanel, itRack1, itRack2], new Vector3(-2, 2 * 2.2, 0));
 
-    // High Voltage 13.8 kV Feeder Path (Red Conduit)
+    // High Voltage 13.8 kV Feeder Path (Red Conduit) - Orthogonal 90° Routing
     const hvTube = MeshBuilder.CreateTube('CABLE_HV', {
       path: [
         new Vector3(-10.2, 0.5, -2.5),
         new Vector3(-8.5, 0.5, -2.5),
-        new Vector3(-8.5, 1.8, -2.5),
+        new Vector3(-8.5, 2.4, -2.5),
         new Vector3(-8.5, 2.4, -2.8),
         new Vector3(-6.0, 2.4, -2.8),
-        new Vector3(-6.0, 2.2, -3.0)
+        new Vector3(-6.0, 2.2, -2.8)
       ],
       radius: 0.08
     }, this.scene);
@@ -1074,31 +1100,48 @@ export class BuildingSceneManager {
     busduct.material = this.createMaterial('mat_busduct', new Color3(0.85, 0.55, 0.25), 0.6, 40);
     this.cableMeshes.set('LV_MAIN', [busduct]);
 
-    // Floor Feeder Cables
-    const feederMat = this.createMaterial('mat_feeder_cable', new Color3(0.15, 0.45, 0.85), 0.5, 36);
+    // Floor Feeder Cables - Clean Orthogonal BIM Routing
+    // Feeders emerge from MDB top -> enter overhead tray -> turn into riser shaft -> climb strictly vertically on ladder -> branch 90° into panel
+    const feederMat = this.createMaterial('mat_feeder_cable', new Color3(0.12, 0.50, 0.92), 0.5, 40);
+
     for (let f = 1; f <= 6; f++) {
       const y = f * floorHeight;
+      const targetPanelY = y + 1.25;
+      // Evenly space the 6 cables side-by-side across the cable ladder (-2.8 to -2.2)
+      const cableX = -2.8 + (f - 1) * 0.12;
+
       const feederTube = MeshBuilder.CreateTube(`CABLE_F${f}`, {
         path: [
-          new Vector3(-1.0, 2.3, -2.4),
-          new Vector3(-2.5, 2.3, -2.4),
-          new Vector3(-2.5, y + 1.25, -0.2),
-          new Vector3(-2.5, y + 1.25, 0.5)
+          // 1. Exit top of MDB breaker compartment
+          new Vector3(-1.8 + (f - 1) * 0.1, 2.35, -2.2),
+          // 2. Rise vertically into overhead horizontal cable tray
+          new Vector3(-1.8 + (f - 1) * 0.1, 2.52, -2.2),
+          // 3. Run horizontally along tray towards riser shaft (along X)
+          new Vector3(cableX, 2.52, -2.2),
+          // 4. Turn 90° horizontally along Z into riser shaft entrance
+          new Vector3(cableX, 2.52, -0.2),
+          // 5. Rise STRICTLY VERTICAL along the cable ladder directly to target floor
+          new Vector3(cableX, targetPanelY + 0.3, -0.2),
+          // 6. Branch 90° horizontal forward (along Z) out of the riser towards the panel
+          new Vector3(cableX, targetPanelY + 0.3, 0.4),
+          // 7. Drop 90° into top of floor distribution panel
+          new Vector3(-2.5, targetPanelY + 0.65, 0.4)
         ],
-        radius: 0.05
+        radius: 0.032
       }, this.scene);
       feederTube.material = feederMat;
       this.cableMeshes.set(`F${f}`, [feederTube]);
     }
 
-    // Emergency Feeder Path (Generator to ATS)
+    // Emergency Feeder Path (Generator to ATS) - Orthogonal 90° Routing
     const genTube = MeshBuilder.CreateTube('CABLE_GEN_ATS', {
       path: [
         new Vector3(7.0, 1.3, -1.9),
+        new Vector3(5.5, 1.3, -1.9),
         new Vector3(5.5, 1.3, -2.2),
         new Vector3(4.0, 1.3, -2.2)
       ],
-      radius: 0.08
+      radius: 0.06
     }, this.scene);
     genTube.material = this.createMaterial('mat_cable_EMER', new Color3(0.95, 0.6, 0.12), 0.6, 40);
     this.cableMeshes.set('GEN', [genTube]);
@@ -1160,6 +1203,28 @@ export class BuildingSceneManager {
         }
       });
     });
+
+    // Also highlight corresponding feeder/path cables when equipment is selected
+    this.cableMeshes.forEach((cables, key) => {
+      const isMatched = !!(
+        this.selectedTag &&
+        (key === this.selectedTag ||
+          (this.selectedTag.startsWith('P-F') && key === this.selectedTag.replace('P-', '')) ||
+          (this.selectedTag === 'T1' && key === 'LV_MAIN') ||
+          (this.selectedTag === 'HV-01' && key === 'HV') ||
+          (this.selectedTag === 'GEN-1' && key === 'GEN'))
+      );
+      cables.forEach((cable) => {
+        const mat = cable.material as StandardMaterial;
+        if (mat) {
+          if (isMatched) {
+            mat.emissiveColor = new Color3(0.3, 0.85, 1.0);
+          } else {
+            mat.emissiveColor = new Color3(0, 0, 0);
+          }
+        }
+      });
+    });
   }
 
   public updateViewOptions(options: ViewOptions3D) {
@@ -1183,14 +1248,22 @@ export class BuildingSceneManager {
 
     this.setCategoryVisibility('HV-01', options.showHV);
     this.setCategoryVisibility('METER', options.showHV);
+    const hvCables = this.cableMeshes.get('HV');
+    if (hvCables) hvCables.forEach((c) => (c.isVisible = options.showHV));
+
     this.setCategoryVisibility('T1', options.showTransformer);
     this.setCategoryVisibility('MDB-A', options.showLV);
     this.setCategoryVisibility('Q0', options.showLV);
+    const lvMain = this.cableMeshes.get('LV_MAIN');
+    if (lvMain) lvMain.forEach((c) => (c.isVisible = options.showLV));
+
     this.setCategoryVisibility('C1', options.showAPFC);
     this.setCategoryVisibility('QC', options.showAPFC);
 
     for (let f = 1; f <= 6; f++) {
       this.setCategoryVisibility(`P-F${f}`, options.showFeeders);
+      const feederCables = this.cableMeshes.get(`F${f}`);
+      if (feederCables) feederCables.forEach((c) => (c.isVisible = options.showFeeders));
     }
 
     this.setCategoryVisibility('GEN-1', options.showEmergency);
@@ -1198,6 +1271,9 @@ export class BuildingSceneManager {
     this.setCategoryVisibility('ATS-E', options.showEmergency);
     this.setCategoryVisibility('FP-ATS', options.showEmergency);
     this.setCategoryVisibility('FP-MOTOR', options.showEmergency);
+    const genCables = this.cableMeshes.get('GEN');
+    if (genCables) genCables.forEach((c) => (c.isVisible = options.showEmergency));
+
     this.setCategoryVisibility('EDB', options.showLV);
     this.setCategoryVisibility('MDP', options.showLV);
     this.setCategoryVisibility('HVAC-LOAD', options.showLoads);
