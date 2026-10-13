@@ -107,4 +107,10 @@ export interface ViewOptions3D {
   showPowerPath: 'none' | 'normal' | 'emergency' | 'fire';
   targetEquipmentId?: string;
   animateFlow: boolean;
+  lighting: 'day' | 'dusk';
+  quality: 'balanced' | 'high';
+  autoRotate: boolean;
+  showLabels: boolean;
+  isolatedFloor: number | null;
+  apfcEnergized: boolean;
 }

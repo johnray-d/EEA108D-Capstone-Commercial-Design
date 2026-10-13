@@ -26,7 +26,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedTag, onC
   };
 
   return (
-    <div className="absolute top-4 right-4 w-96 max-h-[calc(100vh-2rem)] bg-white/98 backdrop-blur-md border border-slate-200/90 rounded-xl shadow-2xl flex flex-col z-50 overflow-hidden animate-in fade-in slide-in-from-right-4 duration-200">
+    <div className="equipment-inspector absolute top-4 right-4 w-96 max-h-[calc(100vh-2rem)] bg-white/98 backdrop-blur-md border border-slate-200/90 rounded-xl shadow-2xl flex flex-col z-50 overflow-hidden animate-in fade-in slide-in-from-right-4 duration-200">
       {/* Header */}
       <div className="flex items-start justify-between p-4 border-b border-slate-200 bg-slate-50/90">
         <div className="flex items-center gap-3">

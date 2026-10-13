@@ -1,1388 +1,791 @@
-import {
-  Engine,
-  WebGPUEngine,
-  Scene,
-  ArcRotateCamera,
-  Vector3,
-  Color3,
-  Color4,
-  HemisphericLight,
-  DirectionalLight,
-  MeshBuilder,
-  StandardMaterial,
-  Mesh,
-  ActionManager,
-  ExecuteCodeAction,
-  Animation,
-  CubicEase,
-  EasingFunction
-} from '@babylonjs/core';
+import { Engine } from '@babylonjs/core/Engines/engine';
+import { Scene } from '@babylonjs/core/scene';
+import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
+import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { Color3, Color4 } from '@babylonjs/core/Maths/math.color';
+import { SphericalPolynomial } from '@babylonjs/core/Maths/sphericalPolynomial';
+import { HemisphericLight } from '@babylonjs/core/Lights/hemisphericLight';
+import { DirectionalLight } from '@babylonjs/core/Lights/directionalLight';
+import { PointLight } from '@babylonjs/core/Lights/pointLight';
+import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder';
+import { Mesh } from '@babylonjs/core/Meshes/mesh';
+import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
+import { PBRMaterial } from '@babylonjs/core/Materials/PBR/pbrMaterial';
+import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
+import { ImageProcessingConfiguration } from '@babylonjs/core/Materials/imageProcessingConfiguration';
+import { DynamicTexture } from '@babylonjs/core/Materials/Textures/dynamicTexture';
+import { RawCubeTexture } from '@babylonjs/core/Materials/Textures/rawCubeTexture';
+import { Texture } from '@babylonjs/core/Materials/Textures/texture';
+import { ShadowGenerator } from '@babylonjs/core/Lights/Shadows/shadowGenerator';
+import { DefaultRenderingPipeline } from '@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline';
+import { HighlightLayer } from '@babylonjs/core/Layers/highlightLayer';
+import { PointerEventTypes } from '@babylonjs/core/Events/pointerEvents';
+import { Animation } from '@babylonjs/core/Animations/animation';
+import { CubicEase, EasingFunction } from '@babylonjs/core/Animations/easing';
+import '@babylonjs/core/Engines/Extensions/engine.rawTexture';
+import '@babylonjs/core/Lights/Shadows/shadowGeneratorSceneComponent';
+import '@babylonjs/core/Animations/animatable';
+import '@babylonjs/core/Materials/Textures/baseTexture.polynomial';
+import '@babylonjs/core/Culling/ray';
 import { ViewOptions3D } from '../types/powerSystem';
 
+export type CameraPreset = 'home' | 'plant' | 'riser' | 'retail' | 'office' | 'roof' | 'basement';
 export interface SceneCallbacks {
   onSelectEquipment: (tag: string | null) => void;
   onHoverEquipment: (tag: string | null) => void;
 }
+type Part = { mesh: Mesh; floor: number; role: string; tag?: string };
+type Route = { mesh: Mesh; points: Vector3[]; markers: Mesh[]; kind: string; floor: number };
+const LEVELS = [0, 4.8, 9.6, 13.8, 18, 22.2, 26.4];
+const v = (x: number, y: number, z: number) => new Vector3(x, y, z);
 
+/** Concept architecture: 50 x 40 m floors match the report's 2,000 m² allowance.
+ * Floor heights, fitout, façade and plant positions are illustrative, not surveyed.
+ * Electrical route geometry is explanatory; the report's cable lengths govern analysis.
+ */
 export class BuildingSceneManager {
-  private engine!: Engine | WebGPUEngine;
+  private engine!: Engine;
   private scene!: Scene;
   private camera!: ArcRotateCamera;
-  private canvas: HTMLCanvasElement;
-  private callbacks: SceneCallbacks;
-
-  // Meshes collections
-  private equipmentMeshes: Map<string, Mesh[]> = new Map();
-  private floorMeshes: Mesh[] = [];
-  private shellMeshes: Mesh[] = [];
-  private facadeMullionMeshes: Mesh[] = [];
-  private cableMeshes: Map<string, Mesh[]> = new Map();
-
-  // Default positions for exploded view
-  private originalPositions: Map<Mesh, Vector3> = new Map();
-  private explodedOffsets: Map<Mesh, Vector3> = new Map();
-
+  private sun!: DirectionalLight;
+  private ambient!: HemisphericLight;
+  private shadows!: ShadowGenerator;
+  private pipeline!: DefaultRenderingPipeline;
+  private highlight!: HighlightLayer;
+  private materials = new Map<string, PBRMaterial>();
+  private floors: TransformNode[] = [];
+  private parts: Part[] = [];
+  private routes: Route[] = [];
+  private labels: Mesh[] = [];
   private selectedTag: string | null = null;
-  private isDisposed = false;
-  private currentOptions: ViewOptions3D;
+  private disposed = false;
+  private phase = 0;
+  private options: ViewOptions3D;
+  private sequence = 0;
+  private framingScale = 1;
+  private interiorLights: PointLight[] = [];
 
-  constructor(canvas: HTMLCanvasElement, callbacks: SceneCallbacks, initialOptions: ViewOptions3D) {
-    this.canvas = canvas;
-    this.callbacks = callbacks;
-    this.currentOptions = initialOptions;
+  constructor(private canvas: HTMLCanvasElement, private callbacks: SceneCallbacks, options: ViewOptions3D) {
+    this.options = options;
   }
 
   public async init(): Promise<string> {
-    let engineType = 'WebGL2';
-    try {
-      const hasGlslang = typeof (window as any).glslang !== 'undefined';
-      if (hasGlslang && (await WebGPUEngine.IsSupportedAsync)) {
-        try {
-          const webgpu = new WebGPUEngine(this.canvas, {
-            stencil: true,
-            antialias: true
-          });
-          await Promise.race([
-            webgpu.initAsync(),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('WebGPU init timeout')), 1500))
-          ]);
-          this.engine = webgpu;
-          engineType = 'WebGPU (Hardware Accelerated)';
-        } catch (gpuErr) {
-          console.warn('WebGPU init unavailable, using WebGL2:', gpuErr);
-          this.engine = new Engine(this.canvas, true, {
-            stencil: true,
-            preserveDrawingBuffer: true,
-            powerPreference: 'high-performance'
-          });
-          engineType = 'WebGL2 (Hardware Accelerated)';
-        }
-      } else {
-        this.engine = new Engine(this.canvas, true, {
-          stencil: true,
-          preserveDrawingBuffer: true,
-          powerPreference: 'high-performance'
-        });
-        engineType = 'WebGL2 (Hardware Accelerated)';
-      }
-    } catch (e) {
-      console.warn('Standard engine init error, falling back to basic WebGL:', e);
-      this.engine = new Engine(this.canvas, true);
-      engineType = 'WebGL2';
-    }
-
+    this.engine = new Engine(this.canvas, true, { stencil: true, powerPreference: 'high-performance' });
     this.scene = new Scene(this.engine);
-    // Crisp architectural engineering light background
-    this.scene.clearColor = new Color4(0.95, 0.96, 0.98, 1.0);
-
-    this.setupCamera();
-    this.setupLights();
-
-    // Comprehensive Architectural Commercial Structure
-    this.buildBuildingShell();
-    this.buildStructuralFrameAndCore();
-    this.buildCurtainWallFacade();
-    this.buildRetailFitout();
-    this.buildOfficeFitout();
-    this.buildRooftopPlantDeck();
-    this.buildBasementCivil();
-
-    // Realistic Power Engineering Equipment & Distribution
-    this.buildElectricalPlantRoom();
-    this.buildEmergencyAndFireSystem();
-    this.buildCableFeedersAndRiser();
-
-    this.engine.resize();
-
-    this.engine.runRenderLoop(() => {
-      if (!this.isDisposed && this.scene) {
-        this.scene.render();
-      }
-    });
-
-    window.addEventListener('resize', this.onResize);
-    return engineType;
-  }
-
-  public resize(): void {
-    if (this.engine) {
-      this.engine.resize();
-    }
-  }
-
-  private onResize = () => {
-    this.resize();
-  };
-
-  private setupCamera() {
-    this.camera = new ArcRotateCamera(
-      'mainCamera',
-      -Math.PI / 3,
-      Math.PI / 3,
-      38,
-      new Vector3(0, 9, 0),
-      this.scene
-    );
+    this.scene.clearColor = Color4.FromHexString('#e3e8e7ff');
+    this.framingScale = this.getFramingScale();
+    this.camera = new ArcRotateCamera('architectural-camera', -1.02, 1.16, 122 * this.framingScale, v(-1, 10, 0), this.scene);
     this.camera.attachControl(this.canvas, true);
-    this.camera.lowerRadiusLimit = 4;
-    this.camera.upperRadiusLimit = 85;
-    this.camera.wheelPrecision = 20;
-    this.camera.inertia = 0.65;
-    this.camera.panningSensibility = 50;
-  }
-
-  private setupLights() {
-    const ambient = new HemisphericLight('ambientLight', new Vector3(0, 1, 0), this.scene);
-    ambient.intensity = 0.88;
-    ambient.diffuse = new Color3(1.0, 1.0, 1.0);
-    ambient.groundColor = new Color3(0.78, 0.82, 0.88);
-
-    const dirLight1 = new DirectionalLight('dirLight1', new Vector3(-1, -2, -1).normalize(), this.scene);
-    dirLight1.position = new Vector3(35, 55, 35);
-    dirLight1.intensity = 1.05;
-    dirLight1.diffuse = new Color3(1.0, 0.98, 0.95);
-
-    const dirLight2 = new DirectionalLight('dirLight2', new Vector3(1, -1.2, 1).normalize(), this.scene);
-    dirLight2.position = new Vector3(-35, 35, -35);
-    dirLight2.intensity = 0.52;
-    dirLight2.diffuse = new Color3(0.85, 0.92, 1.0);
-  }
-
-  private createMaterial(name: string, diffuse: Color3, specular = 0.35, roughness = 32, alpha = 1.0, emissive = Color3.Black()): StandardMaterial {
-    const mat = new StandardMaterial(name, this.scene);
-    mat.diffuseColor = diffuse;
-    mat.specularColor = new Color3(specular, specular, specular);
-    mat.specularPower = roughness;
-    mat.alpha = alpha;
-    mat.emissiveColor = emissive;
-    return mat;
-  }
-
-  /**
-   * 1. Architectural Floor Slabs & Ground Plinth
-   */
-  private buildBuildingShell() {
-    const floorWidth = 14;
-    const floorDepth = 10;
-    const floorHeight = 2.8;
-    const numFloors = 6;
-
-    // Ground site plinth (Y = 0)
-    const groundMat = this.createMaterial('groundMat', new Color3(0.88, 0.90, 0.94), 0.2, 16);
-    const groundSlab = MeshBuilder.CreateBox('groundSlab', {
-      width: floorWidth + 9,
-      height: 0.4,
-      depth: floorDepth + 9
-    }, this.scene);
-    groundSlab.position = new Vector3(0, -0.2, 0);
-    groundSlab.material = groundMat;
-
-    // Site perimeter road / curbs
-    const roadMat = this.createMaterial('roadMat', new Color3(0.78, 0.81, 0.86));
-    const curb = MeshBuilder.CreateBox('curb', {
-      width: floorWidth + 9.4,
-      height: 0.15,
-      depth: floorDepth + 9.4
-    }, this.scene);
-    curb.position = new Vector3(0, -0.05, 0);
-    curb.material = roadMat;
-
-    // Post-tensioned concrete floor slabs (L1 to L6 and Roof)
-    const slabMat = this.createMaterial('slabMat', new Color3(0.82, 0.85, 0.89), 0.3, 28);
-    const trimMat = this.createMaterial('slabTrimMat', new Color3(0.70, 0.74, 0.80), 0.4, 32);
-
-    for (let i = 1; i <= numFloors + 1; i++) {
-      const slab = MeshBuilder.CreateBox(`slab_L${i}`, {
-        width: floorWidth,
-        height: 0.26,
-        depth: floorDepth
-      }, this.scene);
-      const yPos = i * floorHeight;
-      slab.position = new Vector3(0, yPos, 0);
-      slab.material = slabMat;
-      this.floorMeshes.push(slab);
-
-      // Architectural facade slab-edge trim band
-      const frontTrim = MeshBuilder.CreateBox(`slabTrim_L${i}`, {
-        width: floorWidth + 0.08,
-        height: 0.28,
-        depth: 0.08
-      }, this.scene);
-      frontTrim.position = new Vector3(0, yPos, floorDepth / 2 + 0.03);
-      frontTrim.material = trimMat;
-      this.floorMeshes.push(frontTrim);
-
-      // Store exploded anchors
-      this.originalPositions.set(slab, slab.position.clone());
-      this.explodedOffsets.set(slab, new Vector3(0, i * 2.2, 0));
-      this.originalPositions.set(frontTrim, frontTrim.position.clone());
-      this.explodedOffsets.set(frontTrim, new Vector3(0, i * 2.2, 0));
+    this.camera.lowerRadiusLimit = 5;
+    // Tall, exploded models need additional distance in narrow portrait viewports.
+    this.camera.upperRadiusLimit = 600;
+    this.camera.lowerBetaLimit = 0.12;
+    this.camera.upperBetaLimit = Math.PI / 2.02;
+    this.camera.minZ = 0.15;
+    this.camera.wheelDeltaPercentage = 0.012;
+    this.camera.panningSensibility = 90;
+    this.camera.inertia = 0.82;
+    this.camera.fov = 0.68;
+    this.ambient = new HemisphericLight('sky-fill', v(0, 1, 0), this.scene);
+    this.ambient.groundColor = Color3.FromHexString('#9eaba5');
+    this.sun = new DirectionalLight('afternoon-sun', v(-0.6, -1, 0.55), this.scene);
+    this.sun.position = v(45, 70, -55);
+    this.sun.shadowMinZ = 1;
+    this.sun.shadowMaxZ = 180;
+    this.shadows = new ShadowGenerator(2048, this.sun);
+    this.shadows.usePercentageCloserFiltering = true;
+    this.shadows.filteringQuality = ShadowGenerator.QUALITY_MEDIUM;
+    this.shadows.bias = 0.0006;
+    this.shadows.normalBias = 0.045;
+    this.shadows.darkness = 0.08;
+    this.createEnvironment();
+    this.pipeline = new DefaultRenderingPipeline('architectural-finish', true, this.scene, [this.camera]);
+    this.pipeline.fxaaEnabled = true;
+    this.pipeline.bloomEnabled = true;
+    this.pipeline.bloomThreshold = 1.15;
+    this.pipeline.bloomWeight = 0.12;
+    this.pipeline.bloomKernel = 48;
+    this.scene.imageProcessingConfiguration.toneMappingEnabled = true;
+    this.scene.imageProcessingConfiguration.toneMappingType = ImageProcessingConfiguration.TONEMAPPING_ACES;
+    this.scene.imageProcessingConfiguration.contrast = 1.12;
+    this.highlight = new HighlightLayer('equipment-selection', this.scene);
+    this.highlight.innerGlow = false;
+    this.createMaterials();
+    for (let f = 0; f < LEVELS.length; f++) {
+      const root = new TransformNode(`level-${f + 1}`, this.scene);
+      root.position.y = LEVELS[f];
+      this.floors.push(root);
     }
-  }
-
-  /**
-   * 2. Structural Frame, Concrete Columns & Central Core Shear Walls
-   */
-  private buildStructuralFrameAndCore() {
-    const floorWidth = 14;
-    const floorDepth = 10;
-    const floorHeight = 2.8;
-    const numFloors = 6;
-    const totalHeight = (numFloors + 1) * floorHeight;
-
-    const colMat = this.createMaterial('colMat', new Color3(0.72, 0.76, 0.82), 0.25, 20);
-
-    // Structural reinforced concrete perimeter & interior columns
-    const colCoords = [
-      new Vector3(-floorWidth / 2 + 0.4, totalHeight / 2, -floorDepth / 2 + 0.4),
-      new Vector3(floorWidth / 2 - 0.4, totalHeight / 2, -floorDepth / 2 + 0.4),
-      new Vector3(-floorWidth / 2 + 0.4, totalHeight / 2, floorDepth / 2 - 0.4),
-      new Vector3(floorWidth / 2 - 0.4, totalHeight / 2, floorDepth / 2 - 0.4),
-      // Mid-span columns
-      new Vector3(0, totalHeight / 2, -floorDepth / 2 + 0.4),
-      new Vector3(0, totalHeight / 2, floorDepth / 2 - 0.4),
-      new Vector3(-floorWidth / 2 + 0.4, totalHeight / 2, 0),
-      new Vector3(floorWidth / 2 - 0.4, totalHeight / 2, 0)
-    ];
-
-    colCoords.forEach((pos, idx) => {
-      const col = MeshBuilder.CreateBox(`structCol_${idx}`, {
-        width: 0.55,
-        height: totalHeight,
-        depth: 0.55
-      }, this.scene);
-      col.position = pos;
-      col.material = colMat;
-      this.shellMeshes.push(col);
-    });
-
-    // Central Reinforced Concrete Core (Shear Walls enclosing Riser & Elevator Hoistway)
-    const coreMat = this.createMaterial('coreMat', new Color3(0.76, 0.80, 0.86), 0.25, 24);
-    const coreWallBack = MeshBuilder.CreateBox('core_wall_back', {
-      width: 3.2,
-      height: totalHeight,
-      depth: 0.2
-    }, this.scene);
-    coreWallBack.position = new Vector3(-2.5, totalHeight / 2, -1.2);
-    coreWallBack.material = coreMat;
-    this.shellMeshes.push(coreWallBack);
-
-    const coreWallSide = MeshBuilder.CreateBox('core_wall_side', {
-      width: 0.2,
-      height: totalHeight,
-      depth: 2.2
-    }, this.scene);
-    coreWallSide.position = new Vector3(-4.1, totalHeight / 2, -0.1);
-    coreWallSide.material = coreMat;
-    this.shellMeshes.push(coreWallSide);
-  }
-
-  /**
-   * 3. Curtain Wall Glazing, Aluminum Mullions & Spandrel Panels
-   */
-  private buildCurtainWallFacade() {
-    const floorWidth = 14;
-    const floorDepth = 10;
-    const floorHeight = 2.8;
-    const numFloors = 6;
-    const totalHeight = (numFloors + 1) * floorHeight;
-
-    // Architectural Low-E vision glass
-    const glassMat = this.createMaterial('glassShellMat', new Color3(0.68, 0.85, 0.98), 0.85, 64, this.currentOptions.shellOpacity);
-    glassMat.backFaceCulling = false;
-
-    // Cutaway Back & Side Walls
-    const backWall = MeshBuilder.CreateBox('backWall', { width: floorWidth, height: totalHeight, depth: 0.08 }, this.scene);
-    backWall.position = new Vector3(0, totalHeight / 2, -floorDepth / 2);
-    backWall.material = glassMat;
-    this.shellMeshes.push(backWall);
-
-    const leftWall = MeshBuilder.CreateBox('leftWall', { width: 0.08, height: totalHeight, depth: floorDepth }, this.scene);
-    leftWall.position = new Vector3(-floorWidth / 2, totalHeight / 2, 0);
-    leftWall.material = glassMat;
-    this.shellMeshes.push(leftWall);
-
-    const rightWall = MeshBuilder.CreateBox('rightWall', { width: 0.08, height: totalHeight, depth: floorDepth }, this.scene);
-    rightWall.position = new Vector3(floorWidth / 2, totalHeight / 2, 0);
-    rightWall.material = glassMat;
-    this.shellMeshes.push(rightWall);
-
-    // Front Wall (Toggleable normal vs cutaway)
-    const frontWall = MeshBuilder.CreateBox('frontWall', { width: floorWidth, height: totalHeight, depth: 0.08 }, this.scene);
-    frontWall.position = new Vector3(0, totalHeight / 2, floorDepth / 2);
-    frontWall.material = glassMat;
-    frontWall.isVisible = this.currentOptions.shellMode === 'normal';
-    this.shellMeshes.push(frontWall);
-
-    // Architectural Aluminum Mullion Grid (Frames)
-    const mullionMat = this.createMaterial('mullionMat', new Color3(0.35, 0.38, 0.44), 0.6, 40);
-
-    // Vertical facade mullions on rear and sides
-    const numVertMullions = 6;
-    for (let m = 0; m <= numVertMullions; m++) {
-      const x = -floorWidth / 2 + (m * floorWidth) / numVertMullions;
-      const vMullion = MeshBuilder.CreateBox(`mullion_v_${m}`, { width: 0.06, height: totalHeight, depth: 0.12 }, this.scene);
-      vMullion.position = new Vector3(x, totalHeight / 2, -floorDepth / 2);
-      vMullion.material = mullionMat;
-      this.facadeMullionMeshes.push(vMullion);
-      this.shellMeshes.push(vMullion);
-    }
-
-    // Ground Floor Double-Height Storefront Entrance Portal
-    const entranceFrame = MeshBuilder.CreateBox('storefront_portal', { width: 4.5, height: 2.8, depth: 0.2 }, this.scene);
-    entranceFrame.position = new Vector3(0, 1.4, floorDepth / 2 + 0.05);
-    entranceFrame.material = this.createMaterial('mat_portal', new Color3(0.2, 0.22, 0.26), 0.6, 40);
-    this.shellMeshes.push(entranceFrame);
-  }
-
-  /**
-   * 4. Retail Floors (L1 & L2) - Display Islands, Shelving, Suspended Track Lighting & Escalator Void
-   */
-  private buildRetailFitout() {
-    const floorHeight = 2.8;
-
-    for (let f = 1; f <= 2; f++) {
-      const y = f * floorHeight + 0.05;
-
-      // Surface-mounted industrial track lighting rails flush under ceiling
-      const trackMat = this.createMaterial(`trackMat_L${f}`, new Color3(0.22, 0.24, 0.28));
-      const track1 = MeshBuilder.CreateBox(`track1_L${f}`, { width: 7.0, height: 0.04, depth: 0.05 }, this.scene);
-      track1.position = new Vector3(0, y + 2.68, -1.5);
-      track1.material = trackMat;
-      this.floorMeshes.push(track1);
-
-      const track2 = MeshBuilder.CreateBox(`track2_L${f}`, { width: 7.0, height: 0.04, depth: 0.05 }, this.scene);
-      track2.position = new Vector3(0, y + 2.68, 1.5);
-      track2.material = trackMat;
-      this.floorMeshes.push(track2);
-
-      // Track spotlights along the rails
-      for (let s = -2.5; s <= 2.5; s += 1.25) {
-        const spot = MeshBuilder.CreateCylinder(`spot_L${f}_${s}`, { diameter: 0.12, height: 0.15 }, this.scene);
-        spot.position = new Vector3(s, y + 2.58, 1.5);
-        spot.material = this.createMaterial(`mat_spot_${f}_${s}`, new Color3(0.9, 0.85, 0.4), 0.8, 48, 1.0, new Color3(0.25, 0.22, 0.08));
-        this.floorMeshes.push(spot);
+    this.buildSite();
+    this.buildArchitecture();
+    this.buildInteriors();
+    this.buildRoof();
+    this.buildPlant();
+    this.mergeStaticGeometry();
+    for (let floor = 0; floor < 6; floor++) {
+      for (const x of [-10, 12]) {
+        const light = new PointLight(`interior-${floor}-${x}`, v(x, 3, -8), this.scene);
+        light.parent = this.floors[floor];
+        light.diffuse = Color3.FromHexString('#ffe1ad');
+        light.range = 35;
+        light.includedOnlyMeshes = this.parts.filter(part => part.floor === floor).map(part => part.mesh);
+        this.interiorLights.push(light);
       }
-
-      // Retail Checkout / Cash Wrap Counter
-      const cashier = MeshBuilder.CreateBox(`cashier_L${f}`, { width: 2.4, height: 0.9, depth: 1.0 }, this.scene);
-      cashier.position = new Vector3(-3.8, y + 0.45, 2.8);
-      cashier.material = this.createMaterial(`mat_cashier_L${f}`, new Color3(0.88, 0.90, 0.94));
-      this.floorMeshes.push(cashier);
-
-      // Save for exploded offsets
-      [track1, track2, cashier].forEach((mesh) => {
-        this.originalPositions.set(mesh, mesh.position.clone());
-        this.explodedOffsets.set(mesh, new Vector3(0, f * 2.2, 0));
-      });
     }
-
-    // Escalator structural truss connecting Level 1 (Retail) to Level 2 (Retail)
-    const escAngle = -Math.PI / 6;
-    const escMat = this.createMaterial('escMat', new Color3(0.3, 0.33, 0.38), 0.6, 40);
-    const escalatorTruss = MeshBuilder.CreateBox('escalator_truss', { width: 1.2, height: 0.35, depth: 4.8 }, this.scene);
-    escalatorTruss.position = new Vector3(3.2, 4.2, 0);
-    escalatorTruss.rotation.x = escAngle;
-    escalatorTruss.material = escMat;
-    this.floorMeshes.push(escalatorTruss);
-
-    // Glass balustrades on escalator
-    const escGlass = MeshBuilder.CreateBox('escalator_glass', { width: 1.25, height: 0.7, depth: 4.8 }, this.scene);
-    escGlass.position = new Vector3(3.2, 4.6, 0);
-    escGlass.rotation.x = escAngle;
-    escGlass.material = this.createMaterial('mat_esc_glass', new Color3(0.75, 0.88, 0.98), 0.8, 64, 0.4);
-    this.floorMeshes.push(escGlass);
-    
-    [escalatorTruss, escGlass].forEach((mesh) => {
-      this.originalPositions.set(mesh, mesh.position.clone());
-      this.explodedOffsets.set(mesh, new Vector3(0, 1.5 * 2.2, 0));
+    this.buildLabels();
+    this.updateViewOptions(this.options);
+    this.scene.onPointerObservable.add(info => {
+      if (info.type !== PointerEventTypes.POINTERTAP && info.type !== PointerEventTypes.POINTERMOVE) return;
+      const tag = info.pickInfo?.pickedMesh?.metadata?.tag ?? null;
+      if (info.type === PointerEventTypes.POINTERTAP) this.callbacks.onSelectEquipment(tag);
+      else {
+        this.canvas.style.cursor = tag ? 'pointer' : 'grab';
+        this.callbacks.onHoverEquipment(tag);
+      }
     });
+    this.resize();
+    await this.scene.whenReadyAsync();
+    if (this.disposed) return 'WebGL';
+    this.engine.runRenderLoop(() => {
+      if (this.disposed || document.hidden) return;
+      const dt = Math.min(this.engine.getDeltaTime() / 1000, 0.06);
+      if (this.options.autoRotate) this.camera.alpha += dt * 0.065;
+      if (this.options.animateFlow) this.phase += dt * 0.12;
+      for (const route of this.routes) {
+        route.markers.forEach((marker, i) => {
+          marker.position.copyFrom(this.pointAlong(route.points, (this.phase + i / 3) % 1));
+          marker.isVisible = route.mesh.isVisible && this.options.animateFlow;
+        });
+      }
+      this.scene.render();
+    });
+    return this.engine.webGLVersion === 2 ? 'WebGL 2' : 'WebGL';
   }
 
-  /**
-   * 5. Office Floors (L3 to L6) - Acoustic Ceiling Grid, Workstations & Glazed Conference Rooms
-   */
-  private buildOfficeFitout() {
-    const floorHeight = 2.8;
+  // A self-contained sky reflection map: no remote HDRI, model or texture requests.
+  private createEnvironment() {
+    const size = 64;
+    const faces: Uint8Array[] = [];
+    for (let face = 0; face < 6; face++) {
+      const data = new Uint8Array(size * size * 4);
+      for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+        const t = face === 2 ? 0 : face === 3 ? 1 : y / size;
+        const sky = [139, 174, 194], horizon = [226, 224, 211], ground = [100, 117, 110];
+        const a = t < 0.52 ? sky : horizon, b = t < 0.52 ? horizon : ground;
+        const blend = t < 0.52 ? t / 0.52 : (t - 0.52) / 0.48;
+        for (let c = 0; c < 3; c++) data[(y * size + x) * 4 + c] = a[c] + (b[c] - a[c]) * blend;
+        data[(y * size + x) * 4 + 3] = 255;
+      }
+      faces.push(data);
+    }
+    const env = new RawCubeTexture(this.scene, faces, size, Engine.TEXTUREFORMAT_RGBA, Engine.TEXTURETYPE_UNSIGNED_BYTE, true, false, Texture.TRILINEAR_SAMPLINGMODE);
+    env.name = 'procedural-sky-reflections';
+    env.coordinatesMode = Texture.CUBIC_MODE;
+    // Explicit diffuse irradiance avoids a GPU readback racing scene disposal in StrictMode.
+    const irradiance = new SphericalPolynomial();
+    irradiance.xx.set(0.2, 0.23, 0.25);
+    irradiance.yy.set(0.3, 0.33, 0.36);
+    irradiance.zz.set(0.2, 0.23, 0.25);
+    env.sphericalPolynomial = irradiance;
+    this.scene.environmentTexture = env;
+  }
 
-    for (let f = 3; f <= 6; f++) {
-      const y = f * floorHeight + 0.05;
+  private mat(name: string, color: string, roughness = 0.65, metal = 0): PBRMaterial {
+    const material = new PBRMaterial(name, this.scene);
+    material.albedoColor = Color3.FromHexString(color);
+    material.roughness = roughness;
+    material.metallic = metal;
+    this.materials.set(name, material);
+    return material;
+  }
 
-      // Suspended 600x600 Lay-In Ceiling Tiles with LED Troffers
-      const ceilingMat = this.createMaterial(`ceilingMat_L${f}`, new Color3(0.88, 0.90, 0.92));
-      for (let tx = -4; tx <= 4; tx += 2.8) {
-        for (let tz = -2.5; tz <= 2.5; tz += 2.5) {
-          const troffer = MeshBuilder.CreateBox(`troffer_L${f}_${tx}_${tz}`, { width: 1.4, height: 0.04, depth: 0.7 }, this.scene);
-          troffer.position = new Vector3(tx, y + 2.65, tz);
-          troffer.material = this.createMaterial(`mat_troff_${f}_${tx}`, new Color3(1.0, 1.0, 1.0), 0.9, 64, 1.0, new Color3(0.25, 0.25, 0.25));
-          this.floorMeshes.push(troffer);
+  private createMaterials() {
+    this.mat('stone', '#d9d6ca', 0.82);
+    this.mat('concrete', '#b6beb8', 0.9);
+    this.mat('paving', '#b9bdb5', 0.95);
+    this.mat('road', '#444b4b', 0.98);
+    this.mat('white', '#edece2', 0.64);
+    this.mat('metal', '#45524f', 0.3, 0.75);
+    this.mat('dark', '#243533', 0.55, 0.35);
+    this.mat('bronze', '#aa8760', 0.35, 0.65);
+    this.mat('wood', '#a98156', 0.78);
+    this.mat('carpet', '#677c76', 0.98);
+    this.mat('soil', '#554e3b', 1);
+    this.mat('leaf', '#536f4b', 0.94);
+    this.mat('leaf-light', '#7d905b', 0.94);
+    this.mat('bark', '#796446', 1);
+    this.mat('water', '#608b8b', 0.12, 0.35);
+    this.mat('copper', '#c77f4d', 0.3, 0.8);
+    this.mat('red', '#b85142', 0.48, 0.2);
+    this.mat('blue', '#518092', 0.48, 0.3);
+    this.mat('green', '#4c8772', 0.48, 0.3);
+    this.mat('yellow', '#cda64e', 0.5, 0.2);
+    const glass = this.mat('glass', '#547a7e', 0.16, 0.25);
+    glass.alpha = 0.67;
+    glass.transparencyMode = PBRMaterial.PBRMATERIAL_ALPHABLEND;
+    glass.backFaceCulling = false;
+    glass.environmentIntensity = 1.4;
+    glass.clearCoat.isEnabled = true;
+    glass.clearCoat.intensity = 0.8;
+    const inner = this.mat('inner-glass', '#b5d1c9', 0.15, 0.05);
+    inner.alpha = 0.2;
+    inner.backFaceCulling = false;
+    const lamp = this.mat('lamp', '#fff1d3', 0.45);
+    lamp.emissiveColor = Color3.FromHexString('#ffdba0').scale(1.5);
+    const screen = this.mat('screen', '#214b48', 0.25);
+    screen.emissiveColor = Color3.FromHexString('#68b5a1').scale(0.45);
+    // Fine seeded grain prevents perfectly flat concrete without external assets.
+    const texture = new DynamicTexture('concrete-grain', 256, this.scene, true);
+    const ctx = texture.getContext();
+    let seed = 97;
+    const noise = new ImageData(256, 256);
+    for (let i = 0; i < noise.data.length; i += 4) {
+      seed = (seed * 16807) % 2147483647;
+      const value = 218 + seed % 30;
+      noise.data[i] = noise.data[i + 1] = noise.data[i + 2] = value;
+      noise.data[i + 3] = 255;
+    }
+    ctx.putImageData(noise, 0, 0);
+    texture.update();
+    texture.uScale = texture.vScale = 4;
+    this.materials.get('concrete')!.albedoTexture = texture;
+    this.materials.get('stone')!.albedoTexture = texture;
+    this.materials.get('paving')!.albedoTexture = texture;
+  }
 
-          this.originalPositions.set(troffer, troffer.position.clone());
-          this.explodedOffsets.set(troffer, new Vector3(0, f * 2.2, 0));
+  private attach(mesh: Mesh, material: string, floor: number, role: string, tag?: string) {
+    mesh.material = this.materials.get(material)!;
+    if (floor >= 0) mesh.parent = this.floors[floor];
+    mesh.isPickable = Boolean(tag);
+    mesh.metadata = { tag };
+    mesh.receiveShadows = true;
+    this.parts.push({ mesh, floor, role, tag });
+    return mesh;
+  }
+
+  private box(name: string, size: number[], pos: number[], material: string, floor = -1, role = 'structure', tag?: string) {
+    const mesh = MeshBuilder.CreateBox(`${name}-${this.sequence++}`, { width: size[0], height: size[1], depth: size[2] }, this.scene);
+    mesh.position.set(pos[0], pos[1], pos[2]);
+    return this.attach(mesh, material, floor, role, tag);
+  }
+
+  private cylinder(name: string, diameter: number, height: number, pos: number[], material: string, floor = -1, role = 'detail', tag?: string) {
+    const mesh = MeshBuilder.CreateCylinder(`${name}-${this.sequence++}`, { diameter, height, tessellation: 16 }, this.scene);
+    mesh.position.set(pos[0], pos[1], pos[2]);
+    return this.attach(mesh, material, floor, role, tag);
+  }
+
+  private tree(x: number, z: number, scale = 1) {
+    this.box('tree-planter', [3.5, 0.5, 3.5], [x, 0.22, z], 'stone', -1, 'site');
+    this.box('soil', [3.2, 0.06, 3.2], [x, 0.5, z], 'soil', -1, 'site');
+    this.cylinder('trunk', 0.3 * scale, 3.2 * scale, [x, 1.6 * scale + 0.5, z], 'bark', -1, 'site');
+    for (let i = 0; i < 22; i++) {
+      const crown = MeshBuilder.CreateSphere('canopy', { diameter: (0.9 + (i % 4) * 0.25) * scale, segments: 6 }, this.scene);
+      const spread = Math.sqrt((i + 1) / 22) * 1.65 * scale;
+      crown.position.set(x + Math.sin(i * 2.4) * spread, 4.15 * scale + Math.cos(i * 1.5) * 0.8 - spread * 0.2, z + Math.cos(i * 2.4) * spread);
+      crown.scaling.set(1, 1.15 + (i % 3) * 0.12, 0.9);
+      this.attach(crown, i % 2 ? 'leaf' : 'leaf-light', -1, 'site');
+    }
+  }
+
+  private buildSite() {
+    this.box('infinite-ground', [900, 0.2, 900], [0, -0.9, 0], 'paving', -1, 'ground');
+    this.box('site-foundation', [80, 0.65, 68], [-1, -0.4, 0], 'concrete', -1, 'site');
+    this.box('sidewalk', [80, 0.18, 68], [-1, -0.02, 0], 'stone', -1, 'site');
+    this.box('street', [115, 0.04, 11], [0, -0.7, -41], 'road', -1, 'site');
+    for (let x = -54; x < 55; x += 8) this.box('lane-mark', [3.4, 0.012, 0.13], [x, -0.672, -41], 'white', -1, 'site');
+    for (let x = -37; x <= 37; x += 4) this.box('paving-joint', [0.025, 0.01, 12], [x, 0.08, -27], 'concrete', -1, 'site');
+    for (let z = -33; z < -20; z += 4) this.box('paving-joint', [77, 0.01, 0.025], [0, 0.08, z], 'concrete', -1, 'site');
+    for (const x of [-33, -22, 22, 33]) this.tree(x, -28, x === 22 ? 1.1 : 0.9);
+    for (const z of [-12, 5, 22]) this.tree(32, z, 1.1);
+    for (const x of [-17, 0, 17]) this.tree(x, 27, 1);
+    for (const x of [-16, 16]) {
+      this.box('bench-plinth', [4, 0.4, 1.1], [x, 0.3, -27], 'dark', -1, 'site');
+      for (let i = 0; i < 6; i++) this.box('bench-slat', [4.1, 0.09, 0.14], [x, 0.55, -27.43 + i * 0.17], 'wood', -1, 'site');
+    }
+    for (const x of [-27, -10, 10, 27]) {
+      this.cylinder('bollard', 0.16, 0.9, [x, 0.53, -24], 'dark', -1, 'site');
+      this.cylinder('bollard-light', 0.17, 0.16, [x, 0.83, -24], 'lamp', -1, 'site');
+    }
+    // Two cars establish human scale and a discreet service parking area.
+    for (let i = 0; i < 2; i++) {
+      const x = 31, z = 12 + i * 6;
+      this.box('car-body', [2, 0.55, 4.3], [x, 0.67, z], i ? 'dark' : 'white', -1, 'site');
+      this.box('car-cabin', [1.72, 0.65, 2.3], [x, 1.18, z - 0.12], 'glass', -1, 'site');
+      for (const dx of [-1, 1]) for (const dz of [-1.35, 1.35]) {
+        const wheel = this.cylinder('car-wheel', 0.65, 0.22, [x + dx, 0.4, z + dz], 'dark', -1, 'site');
+        wheel.rotation.z = Math.PI / 2;
+      }
+    }
+    // Simplified neighboring massing sits beyond the modeled site.
+    for (const [x, z, w, d, h] of [[-65, 38, 22, 18, 16], [52, 54, 24, 20, 22], [-17, 65, 28, 16, 12]]) {
+      this.box('urban-context', [w, h, d], [x, h / 2 - 0.8, z], 'concrete', -1, 'context');
+    }
+  }
+
+  private buildArchitecture() {
+    for (let f = 0; f <= 6; f++) {
+      if (f === 1) {
+        // Actual opening around the two escalators; no solid slab across the upper landing.
+        this.box('floor-slab-west', [21, 0.3, 40], [-14.5, -0.05, 0], 'stone', f, 'slab');
+        this.box('floor-slab-east', [21, 0.3, 40], [14.5, -0.05, 0], 'stone', f, 'slab');
+        this.box('floor-slab-front', [8, 0.3, 18], [0, -0.05, -11], 'stone', f, 'slab');
+        this.box('floor-slab-back', [8, 0.3, 11], [0, -0.05, 14.5], 'stone', f, 'slab');
+        for (const x of [-4, 4]) {
+          this.box('atrium-guard', [0.05, 1.05, 11], [x, 0.67, 3.5], 'inner-glass', f, 'interior');
+          this.box('atrium-handrail', [0.06, 0.06, 11], [x, 1.2, 3.5], 'metal', f, 'interior');
+        }
+      } else this.box('floor-slab', [50, 0.3, 40], [0, -0.05, 0], 'stone', f, 'slab');
+      if (f === 6) break;
+      const h = LEVELS[f + 1] - LEVELS[f];
+      for (const x of [-24, -12, 0, 12, 24]) for (const z of [-19, 0, 19]) {
+        this.box('concrete-column', [0.5, h, 0.5], [x, h / 2, z], 'concrete', f);
+      }
+      for (const z of [-19, 0, 19]) this.box('beam', [49, 0.45, 0.45], [0, h - 0.3, z], 'concrete', f);
+      // Lift core and stair enclosure, with two brushed-metal elevator doors.
+      this.box('core-rear', [8, h, 0.3], [-16, h / 2, 8], 'stone', f);
+      this.box('core-side', [0.3, h, 9], [-20, h / 2, 3.5], 'stone', f);
+      this.box('core-front', [8, h, 0.24], [-16, h / 2, -1], 'stone', f);
+      for (const x of [-18, -14]) {
+        this.box('lift-frame', [2.5, 2.8, 0.13], [x, 1.55, -1.16], 'dark', f);
+        this.box('lift-door', [2.12, 2.5, 0.08], [x, 1.4, -1.25], 'metal', f);
+        this.box('lift-seam', [0.025, 2.5, 0.01], [x, 1.4, -1.3], 'dark', f);
+        this.box('lift-indicator', [0.4, 0.13, 0.02], [x, 2.72, -1.3], 'screen', f);
+      }
+      for (let s = 0; s < 16; s++) this.box('stair', [2.6, 0.17, 0.44], [-16, s * h / 16 + 0.15, 0.5 + s * 0.43], 'concrete', f);
+      // Every façade bay is modeled separately, including corners, spandrels and fins.
+      for (const side of ['front', 'back', 'east', 'west']) {
+        const longitudinal = side === 'front' || side === 'back';
+        const length = longitudinal ? 50 : 40;
+        const sign = side === 'front' || side === 'west' ? -1 : 1;
+        const bays = longitudinal ? 20 : 16;
+        const role = `facade-${side}`;
+        for (let b = 0; b < bays; b++) {
+          const along = -length / 2 + (b + 0.5) * 2.5;
+          const pos = longitudinal ? [along, h / 2, sign * 20] : [sign * 25, h / 2, along];
+          const size = longitudinal ? [2.4, h - 0.85, 0.06] : [0.06, h - 0.85, 2.4];
+          this.box('vision-glass', size, pos, 'glass', f, role);
+          const mullion = longitudinal ? [along - 1.25, h / 2, sign * 20.04] : [sign * 25.04, h / 2, along - 1.25];
+          this.box('mullion', longitudinal ? [0.065, h, 0.14] : [0.14, h, 0.065], mullion, 'dark', f, role);
+          if (f >= 2 && b % 2 === 0) {
+            const fin = longitudinal ? [along - 1.25, h / 2, sign * 20.3] : [sign * 25.3, h / 2, along - 1.25];
+            this.box('solar-fin', longitudinal ? [0.13, h - 0.1, 0.68] : [0.68, h - 0.1, 0.13], fin, 'bronze', f, role);
+          }
+        }
+        for (const y of [0.3, h - 0.2]) {
+          this.box('spandrel', longitudinal ? [50.2, 0.48, 0.25] : [0.25, 0.48, 40.2], longitudinal ? [0, y, sign * 20.03] : [sign * 25.03, y, 0], f < 2 ? 'dark' : 'stone', f, role);
         }
       }
-
-      // Glazed Corner Executive Conference Room
-      const confGlass = MeshBuilder.CreateBox(`conf_glass_L${f}`, { width: 3.5, height: 2.4, depth: 0.06 }, this.scene);
-      confGlass.position = new Vector3(4.8, y + 1.2, -2.8);
-      confGlass.material = this.createMaterial(`mat_conf_glass_${f}`, new Color3(0.72, 0.85, 0.95), 0.8, 64, 0.35);
-      this.floorMeshes.push(confGlass);
-
-      const confTable = MeshBuilder.CreateBox(`conf_table_L${f}`, { width: 2.2, height: 0.75, depth: 1.1 }, this.scene);
-      confTable.position = new Vector3(5.2, y + 0.38, -3.8);
-      confTable.material = this.createMaterial(`mat_conf_tab_${f}`, new Color3(0.4, 0.28, 0.2));
-      this.floorMeshes.push(confTable);
-
-      [confGlass, confTable].forEach((mesh) => {
-        this.originalPositions.set(mesh, mesh.position.clone());
-        this.explodedOffsets.set(mesh, new Vector3(0, f * 2.2, 0));
-      });
+      if (f < 2) for (const x of [-25, -12.5, 12.5, 25]) this.box('retail-pier', [0.75, h, 0.85], [x, h / 2, -20.1], 'stone', f, 'facade-front');
     }
+    this.box('entrance-canopy', [15, 0.3, 4.7], [0, 4, -21.2], 'dark', 0, 'facade-front');
+    this.box('canopy-soffit', [14.5, 0.06, 4.3], [0, 3.82, -21.2], 'wood', 0, 'facade-front');
+    for (const x of [-5, 0, 5]) this.box('canopy-strip', [3.4, 0.03, 0.08], [x, 3.77, -22.5], 'lamp', 0, 'facade-front');
+    for (const x of [-3.3, -1.1, 1.1, 3.3]) {
+      this.box('entrance-door', [2.1, 3.4, 0.1], [x, 1.8, -20.2], 'inner-glass', 0, 'facade-front');
+      this.box('door-pull', [0.04, 0.85, 0.08], [x + 0.8, 1.5, -20.3], 'bronze', 0, 'facade-front');
+    }
+    this.sign('COMMERCE  /  01', [0, 4.47, -20.25], 10, 0.7, 0, 'facade-front');
+    this.sign('RETAIL GALLERY', [-13, 3.7, -20.26], 6, 0.45, 0, 'facade-front');
+    this.sign('WORKPLACE & CO.', [15, 3.7, -20.26], 6, 0.45, 0, 'facade-front');
   }
 
-  /**
-   * 6. Rooftop Plant Deck - Parapet Walls, Dunnage Framing & Catwalks
-   */
-  private buildRooftopPlantDeck() {
-    const floorWidth = 14;
-    const floorDepth = 10;
-    const floorHeight = 2.8;
-    const roofY = 7 * floorHeight;
-
-    // Perimeter safety parapet concrete wall
-    const parapetMat = this.createMaterial('parapetMat', new Color3(0.78, 0.81, 0.86), 0.3, 24);
-    const parapetBack = MeshBuilder.CreateBox('parapet_back', { width: floorWidth + 0.1, height: 1.1, depth: 0.25 }, this.scene);
-    parapetBack.position = new Vector3(0, roofY + 0.55, -floorDepth / 2);
-    parapetBack.material = parapetMat;
-    this.floorMeshes.push(parapetBack);
-
-    const parapetFront = MeshBuilder.CreateBox('parapet_front', { width: floorWidth + 0.1, height: 1.1, depth: 0.25 }, this.scene);
-    parapetFront.position = new Vector3(0, roofY + 0.55, floorDepth / 2);
-    parapetFront.material = parapetMat;
-    this.floorMeshes.push(parapetFront);
-
-    const parapetL = MeshBuilder.CreateBox('parapet_L', { width: 0.25, height: 1.1, depth: floorDepth }, this.scene);
-    parapetL.position = new Vector3(-floorWidth / 2, roofY + 0.55, 0);
-    parapetL.material = parapetMat;
-    this.floorMeshes.push(parapetL);
-
-    const parapetR = MeshBuilder.CreateBox('parapet_R', { width: 0.25, height: 1.1, depth: floorDepth }, this.scene);
-    parapetR.position = new Vector3(floorWidth / 2, roofY + 0.55, 0);
-    parapetR.material = parapetMat;
-    this.floorMeshes.push(parapetR);
-
-    // Structural steel dunnage frame (I-beams) elevating VRF condensing units
-    const dunnageMat = this.createMaterial('dunnageMat', new Color3(0.3, 0.35, 0.4), 0.6, 40);
-    const dunnageBeam1 = MeshBuilder.CreateBox('dunnage_beam1', { width: 7.2, height: 0.2, depth: 0.15 }, this.scene);
-    dunnageBeam1.position = new Vector3(3.8, roofY + 0.1, 1.0);
-    dunnageBeam1.material = dunnageMat;
-    this.floorMeshes.push(dunnageBeam1);
-
-    const dunnageBeam2 = MeshBuilder.CreateBox('dunnage_beam2', { width: 7.2, height: 0.2, depth: 0.15 }, this.scene);
-    dunnageBeam2.position = new Vector3(3.8, roofY + 0.1, 2.0);
-    dunnageBeam2.material = dunnageMat;
-    this.floorMeshes.push(dunnageBeam2);
-
-    [parapetBack, parapetFront, parapetL, parapetR, dunnageBeam1, dunnageBeam2].forEach((mesh) => {
-      this.originalPositions.set(mesh, mesh.position.clone());
-      this.explodedOffsets.set(mesh, new Vector3(0, 7 * 2.2, 0));
-    });
-  }
-
-  /**
-   * 7. Basement Civil - Retaining Walls & Cable Trenches
-   */
-  private buildBasementCivil() {
-    const basementY = -2.5;
-    const retainMat = this.createMaterial('retainMat', new Color3(0.74, 0.77, 0.82), 0.2, 16);
-
-    // Board-formed concrete retaining walls
-    const retWall1 = MeshBuilder.CreateBox('retWall_back', { width: 8.5, height: 2.8, depth: 0.3 }, this.scene);
-    retWall1.position = new Vector3(5.0, basementY + 1.4, -1.0);
-    retWall1.material = retainMat;
-    this.floorMeshes.push(retWall1);
-
-    const retWall2 = MeshBuilder.CreateBox('retWall_side', { width: 0.3, height: 2.8, depth: 7.0 }, this.scene);
-    retWall2.position = new Vector3(9.2, basementY + 1.4, 2.5);
-    retWall2.material = retainMat;
-    this.floorMeshes.push(retWall2);
-
-    // Galvanized steel checkered trench covers for sump/cable trenches
-    const trenchMat = this.createMaterial('trenchMat', new Color3(0.45, 0.48, 0.52), 0.5, 36);
-    const trenchCover = MeshBuilder.CreateBox('trench_cover_bsmt', { width: 1.2, height: 0.05, depth: 5.5 }, this.scene);
-    trenchCover.position = new Vector3(4.0, basementY + 0.02, 2.2);
-    trenchCover.material = trenchMat;
-    this.floorMeshes.push(trenchCover);
-  }
-
-  /**
-   * 8. Detailed Electrical Plant Room Equipment:
-   * - Concrete Plinths with Yellow/Black safety borders
-   * - Overhead Monorail Hoist Crane Beam
-   * - High-Voltage Safety Mesh Barrier Cage & "DANGER 13.8 kV" Sign
-   * - 13.8 kV Vacuum Switchgear (HV-01) with protection relay & drawout VCB
-   * - Revenue Metering Point (METER) with digital display & test blocks
-   * - 1,250 kVA Dyn11 Oil Transformer (T1) with radiator flutes, conservator, Buchholz relay, & bushings
-   * - 2,500 A Main Switchboard (MDB-A) with ACB Q0, busbar window & feeder handles
-   * - 400 kVAr Detuned APFC Bank (C1 & QC) with capacitor cans, detuned reactors & controller
-   */
-  private buildElectricalPlantRoom() {
-    const groundY = 0.05;
-    const plinthMat = this.createMaterial('mat_plinth', new Color3(0.78, 0.81, 0.86), 0.25, 16);
-
-    // Overhead Yellow Monorail Crane Beam for transformer/switchgear service
-    const craneMat = this.createMaterial('craneMat', new Color3(0.95, 0.75, 0.1), 0.5, 40);
-    const craneBeam = MeshBuilder.CreateBox('crane_monorail', { width: 12.0, height: 0.28, depth: 0.18 }, this.scene);
-    craneBeam.position = new Vector3(-4.0, 2.65, -2.5);
-    craneBeam.material = craneMat;
-    this.floorMeshes.push(craneBeam);
-
-    // Hoist trolley on beam
-    const hoistTrolley = MeshBuilder.CreateBox('hoist_trolley', { width: 0.6, height: 0.4, depth: 0.35 }, this.scene);
-    hoistTrolley.position = new Vector3(-5.5, 2.4, -2.5);
-    hoistTrolley.material = this.createMaterial('mat_hoist', new Color3(0.25, 0.28, 0.32));
-    this.floorMeshes.push(hoistTrolley);
-
-    // High-Voltage Safety Mesh Barrier Cage (protecting 13.8 kV transformer bay)
-    const cageMat = this.createMaterial('cageMat', new Color3(0.85, 0.88, 0.92), 0.6, 48, 0.4);
-    const hvCage = MeshBuilder.CreateBox('HV_safety_cage', { width: 7.0, height: 2.2, depth: 0.08 }, this.scene);
-    hvCage.position = new Vector3(-7.0, groundY + 1.1, -1.0);
-    hvCage.material = cageMat;
-    this.shellMeshes.push(hvCage);
-
-    // "DANGER: HIGH VOLTAGE 13.8 kV" Warning Plaque on cage
-    const hvSign = MeshBuilder.CreatePlane('HV_danger_sign', { width: 0.9, height: 0.4 }, this.scene);
-    hvSign.position = new Vector3(-7.0, groundY + 1.4, -0.95);
-    hvSign.material = this.createMaterial('mat_hv_sign', new Color3(0.95, 0.85, 0.1), 0.3, 16, 1.0, new Color3(0.3, 0.25, 0.05));
-    this.shellMeshes.push(hvSign);
-
-    // -------------------------------------------------------------
-    // 1. HV Switchgear & Breaker (HV-01 - 17.5 kV / 25 kA Metal-Clad)
-    // -------------------------------------------------------------
-    const hvPlinth = MeshBuilder.CreateBox('HV_plinth', { width: 1.6, height: 0.15, depth: 1.4 }, this.scene);
-    hvPlinth.position = new Vector3(-8.5, groundY + 0.075, -2.5);
-    hvPlinth.material = plinthMat;
-
-    const hvCubicle = MeshBuilder.CreateBox('HV-01_body', { width: 1.3, height: 2.3, depth: 1.1 }, this.scene);
-    hvCubicle.position = new Vector3(-8.5, groundY + 1.25, -2.5);
-    hvCubicle.material = this.createMaterial('mat_HV_body', new Color3(0.85, 0.22, 0.22), 0.45, 48);
-
-    // Numerical Protection Relay (SEL/REF style) with LCD screen
-    const relayDoor = MeshBuilder.CreateBox('HV-01_relayDoor', { width: 1.15, height: 0.72, depth: 0.08 }, this.scene);
-    relayDoor.position = new Vector3(-8.5, groundY + 2.0, -1.94);
-    relayDoor.material = this.createMaterial('mat_HV_panel', new Color3(0.2, 0.22, 0.26));
-
-    const relayLcd = MeshBuilder.CreatePlane('HV-01_lcd', { width: 0.48, height: 0.26 }, this.scene);
-    relayLcd.position = new Vector3(-8.7, groundY + 2.05, -1.89);
-    relayLcd.material = this.createMaterial('mat_HV_lcd', new Color3(0.12, 0.95, 0.75), 0.8, 64, 1.0, new Color3(0.1, 0.4, 0.3));
-
-    // Vacuum Circuit Breaker drawout carriage & Trip/Close buttons
-    const vcbWindow = MeshBuilder.CreateBox('HV-01_vcbWindow', { width: 0.42, height: 0.45, depth: 0.06 }, this.scene);
-    vcbWindow.position = new Vector3(-8.5, groundY + 1.2, -1.94);
-    vcbWindow.material = this.createMaterial('mat_glass_dark', new Color3(0.15, 0.3, 0.4), 0.9, 64, 0.75);
-
-    const btnTrip = MeshBuilder.CreateCylinder('HV-01_btnTrip', { diameter: 0.09, height: 0.06 }, this.scene);
-    btnTrip.rotation.x = Math.PI / 2;
-    btnTrip.position = new Vector3(-8.15, groundY + 1.28, -1.92);
-    btnTrip.material = this.createMaterial('mat_redBtn', new Color3(0.95, 0.1, 0.1));
-
-    const btnClose = MeshBuilder.CreateCylinder('HV-01_btnClose', { diameter: 0.09, height: 0.06 }, this.scene);
-    btnClose.rotation.x = Math.PI / 2;
-    btnClose.position = new Vector3(-8.15, groundY + 1.12, -1.92);
-    btnClose.material = this.createMaterial('mat_greenBtn', new Color3(0.1, 0.85, 0.2));
-
-    const hvGland = MeshBuilder.CreateCylinder('HV-01_gland', { diameter: 0.25, height: 0.3 }, this.scene);
-    hvGland.position = new Vector3(-8.5, groundY + 0.15, -2.5);
-    hvGland.material = this.createMaterial('mat_brass', new Color3(0.75, 0.6, 0.2));
-
-    this.registerEquipment('HV-01', [hvCubicle, hvPlinth, relayDoor, relayLcd, vcbWindow, btnTrip, btnClose, hvGland], new Vector3(-2, 0, -1));
-
-    // -------------------------------------------------------------
-    // 2. Revenue Metering Cubicle (METER)
-    // -------------------------------------------------------------
-    const meterPlinth = MeshBuilder.CreateBox('METER_plinth', { width: 1.1, height: 0.15, depth: 1.0 }, this.scene);
-    meterPlinth.position = new Vector3(-10.2, groundY + 0.075, -2.5);
-    meterPlinth.material = plinthMat;
-
-    const meterCubicle = MeshBuilder.CreateBox('METER_body', { width: 0.95, height: 1.9, depth: 0.85 }, this.scene);
-    meterCubicle.position = new Vector3(-10.2, groundY + 1.05, -2.5);
-    meterCubicle.material = this.createMaterial('mat_Meter_body', new Color3(0.92, 0.55, 0.12), 0.4, 32);
-
-    const meterDisplayWindow = MeshBuilder.CreateBox('METER_displayWindow', { width: 0.55, height: 0.5, depth: 0.05 }, this.scene);
-    meterDisplayWindow.position = new Vector3(-10.2, groundY + 1.35, -2.06);
-    meterDisplayWindow.material = this.createMaterial('mat_meter_window', new Color3(0.1, 0.2, 0.3), 0.8, 64, 0.7);
-
-    const meterLcd = MeshBuilder.CreatePlane('METER_lcd', { width: 0.42, height: 0.24 }, this.scene);
-    meterLcd.position = new Vector3(-10.2, groundY + 1.38, -2.03);
-    meterLcd.material = this.createMaterial('mat_meter_screen', new Color3(0.15, 0.88, 0.98), 0.8, 64, 1.0, new Color3(0.1, 0.35, 0.4));
-
-    const testBlock = MeshBuilder.CreateBox('METER_testBlock', { width: 0.45, height: 0.22, depth: 0.08 }, this.scene);
-    testBlock.position = new Vector3(-10.2, groundY + 0.85, -2.06);
-    testBlock.material = this.createMaterial('mat_testBlock', new Color3(0.18, 0.18, 0.2));
-
-    this.registerEquipment('METER', [meterCubicle, meterPlinth, meterDisplayWindow, meterLcd, testBlock], new Vector3(-3, 0, -1));
-
-    // -------------------------------------------------------------
-    // 3. 1,250 kVA Dyn11 Oil Transformer (T1 - Alternative 1)
-    // -------------------------------------------------------------
-    const t1Plinth = MeshBuilder.CreateBox('T1_plinth', { width: 3.4, height: 0.15, depth: 2.8 }, this.scene);
-    t1Plinth.position = new Vector3(-5.5, groundY + 0.075, -2.5);
-    t1Plinth.material = plinthMat;
-
-    // Steel base skid channels with transport rollers
-    const skidL = MeshBuilder.CreateBox('T1_skidL', { width: 0.16, height: 0.18, depth: 2.5 }, this.scene);
-    skidL.position = new Vector3(-6.3, groundY + 0.2, -2.5);
-    skidL.material = this.createMaterial('mat_steel', new Color3(0.3, 0.35, 0.4), 0.6, 40);
-
-    const skidR = MeshBuilder.CreateBox('T1_skidR', { width: 0.16, height: 0.18, depth: 2.5 }, this.scene);
-    skidR.position = new Vector3(-4.7, groundY + 0.2, -2.5);
-    skidR.material = skidL.material;
-
-    // Corrugated transformer steel tank
-    const trTank = MeshBuilder.CreateBox('T1_tank', { width: 1.9, height: 1.85, depth: 1.7 }, this.scene);
-    trTank.position = new Vector3(-5.5, groundY + 1.15, -2.5);
-    trTank.material = this.createMaterial('mat_T1_tank', new Color3(0.25, 0.55, 0.85), 0.5, 48);
-
-    const coverPlate = MeshBuilder.CreateBox('T1_cover', { width: 2.05, height: 0.1, depth: 1.85 }, this.scene);
-    coverPlate.position = new Vector3(-5.5, groundY + 2.1, -2.5);
-    coverPlate.material = trTank.material;
-
-    // Dual Radiator Cooling Banks with individual cooling flutes
-    const finMat = this.createMaterial('mat_T1_fins', new Color3(0.2, 0.45, 0.75), 0.4, 32);
-    const radiatorMeshes: Mesh[] = [];
-
+  private buildInteriors() {
     for (let f = 0; f < 6; f++) {
-      const finL = MeshBuilder.CreateBox(`T1_finL_${f}`, { width: 0.04, height: 1.5, depth: 1.4 }, this.scene);
-      finL.position = new Vector3(-6.55 - f * 0.08, groundY + 1.15, -2.5);
-      finL.material = finMat;
-
-      const finR = MeshBuilder.CreateBox(`T1_finR_${f}`, { width: 0.04, height: 1.5, depth: 1.4 }, this.scene);
-      finR.position = new Vector3(-4.45 + f * 0.08, groundY + 1.15, -2.5);
-      finR.material = finMat;
-
-      radiatorMeshes.push(finL, finR);
+      const h = LEVELS[f + 1] - LEVELS[f];
+      for (const x of [-9, 3, 15]) for (const z of [-12, 0, 12]) {
+        this.box('linear-light', [6, 0.035, 0.1], [x, h - 0.48, z], 'lamp', f, 'interior');
+      }
+      if (f < 2) {
+        for (const x of [-12, 12]) for (const z of [-9, 4, 13]) {
+          this.box('retail-rug', [9, 0.018, 6.5], [x, 0.115, z], 'carpet', f, 'interior');
+          for (const dx of [-2.4, 2.4]) {
+            this.box('display-island', [2.7, 0.75, 1.2], [x + dx, 0.5, z], 'wood', f, 'interior');
+            this.box('display-top', [2.8, 0.08, 1.3], [x + dx, 0.9, z], 'stone', f, 'interior');
+            for (let i = 0; i < 3; i++) this.box('merchandise', [0.5, 0.25 + i * 0.1, 0.6], [x + dx - 0.7 + i * 0.65, 1.07, z], i % 2 ? 'white' : 'bronze', f, 'interior');
+          }
+          this.box('shop-partition', [9, 2.8, 0.12], [x, 1.55, z + 3.8], 'white', f, 'interior');
+          for (let i = 0; i < 4; i++) this.box('shop-shelf', [8, 0.09, 0.65], [x, 0.55 + i * 0.65, z + 3.4], 'wood', f, 'interior');
+        }
+        this.box('reception', [5, 1.1, 1.4], [0, 0.7, -13], 'stone', f, 'interior');
+        this.box('reception-inlay', [4.8, 0.72, 0.06], [0, 0.7, -13.73], 'wood', f, 'interior');
+      } else {
+        for (const x of [-5, 6, 17]) for (const z of [-12, -5, 3, 11]) {
+          this.box('workstation-rug', [8, 0.025, 5.7], [x, 0.12, z], 'carpet', f, 'interior');
+          this.box('shared-desk', [6.6, 0.08, 1.65], [x, 0.88, z], 'wood', f, 'interior');
+          for (const dx of [-2.7, 2.7]) this.box('desk-leg', [0.08, 0.7, 1.5], [x + dx, 0.49, z], 'white', f, 'interior');
+          this.box('desk-divider', [6.5, 0.35, 0.06], [x, 1.1, z], 'carpet', f, 'interior');
+          for (const dx of [-2.2, 0, 2.2]) for (const side of [-1, 1]) {
+            this.box('monitor', [0.72, 0.42, 0.055], [x + dx, 1.18, z + side * 0.3], 'dark', f, 'interior');
+            this.box('monitor-face', [0.66, 0.35, 0.015], [x + dx, 1.18, z + side * 0.34], 'screen', f, 'interior');
+            this.cylinder('chair-stem', 0.1, 0.4, [x + dx, 0.33, z + side * 1.35], 'metal', f, 'interior');
+            this.box('chair-seat', [0.65, 0.12, 0.62], [x + dx, 0.57, z + side * 1.35], 'dark', f, 'interior');
+            this.box('chair-back', [0.65, 0.55, 0.08], [x + dx, 0.88, z + side * 1.64], 'dark', f, 'interior');
+          }
+        }
+        this.box('meeting-glass', [0.05, 3.1, 10], [-10.8, 1.7, 12.5], 'inner-glass', f, 'interior');
+        this.box('meeting-table', [5.5, 0.15, 2], [-17, 0.87, 13], 'wood', f, 'interior');
+        for (const x of [-19, -17, -15]) for (const z of [11.5, 14.5]) this.box('meeting-chair', [0.65, 0.8, 0.7], [x, 0.53, z], 'dark', f, 'interior');
+      }
+      // Dedicated radial floor panel adjacent to the service shaft.
+      this.cabinet(`P-F${f + 1}`, -22.3, 1.15, -6, 1.1, 1.8, 'blue', f);
+      for (const x of [-8, 9, 21]) {
+        this.cylinder('indoor-planter', 0.7, 0.55, [x, 0.4, -17.4], 'white', f, 'interior');
+        const foliage = MeshBuilder.CreateSphere('indoor-foliage', { diameter: 1.15, segments: 6 }, this.scene);
+        foliage.position.set(x, 1.1, -17.4);
+        foliage.scaling.y = 1.3;
+        this.attach(foliage, 'leaf', f, 'interior');
+      }
     }
+    // Paired escalators in an illustrative central retail circulation zone.
+    for (const x of [-2, 2]) {
+      const stair = this.box('escalator-truss', [1.5, 0.45, 9.8], [x, 2.5, 4], 'metal', 0, 'interior');
+      stair.rotation.x = -0.51;
+      for (let i = 0; i < 24; i++) this.box('escalator-tread', [1.1, 0.12, 0.38], [x, 0.22 + i * 0.2, -0.2 + i * 0.36], 'dark', 0, 'interior');
+      for (const dx of [-0.76, 0.76]) {
+        const rail = this.box('escalator-rail', [0.1, 0.8, 9.8], [x + dx, 3.05, 4], 'inner-glass', 0, 'interior');
+        rail.rotation.x = -0.51;
+      }
+    }
+  }
 
-    // Cylindrical Oil Conservator Drum & Buchholz Relay
-    const conservator = MeshBuilder.CreateCylinder('T1_conservator', { diameter: 0.55, height: 1.6 }, this.scene);
+  private buildRoof() {
+    for (const z of [-20, 20]) {
+      this.box('roof-parapet', [50.3, 0.85, 0.3], [0, 0.5, z], 'stone', 6);
+      this.box('parapet-cap', [50.5, 0.08, 0.45], [0, 0.97, z], 'metal', 6);
+    }
+    for (const x of [-25, 25]) this.box('roof-parapet', [0.3, 0.85, 40], [x, 0.5, 0], 'stone', 6);
+    this.box('lift-penthouse', [8.5, 3.2, 9], [-16, 1.7, 3.5], 'stone', 6, 'load', 'LIFT-MOTOR');
+    this.box('penthouse-cap', [9, 0.2, 9.5], [-16, 3.4, 3.5], 'dark', 6, 'load', 'LIFT-MOTOR');
+    for (let i = 0; i < 8; i++) this.box('penthouse-louver', [3, 0.12, 0.18], [-16, 1 + i * 0.23, -1.06], 'metal', 6, 'load', 'LIFT-MOTOR');
+    // The report specifies 36 VRF outdoor units; all 36 are represented.
+    for (let row = 0; row < 6; row++) for (let col = 0; col < 6; col++) {
+      const x = -5 + col * 4.1, z = -13 + row * 5.2;
+      this.box('vrf-plinth', [2.1, 0.2, 1.5], [x, 0.24, z], 'concrete', 6, 'load', 'HVAC-LOAD');
+      this.box('vrf-unit', [1.7, 1.35, 1.15], [x, 0.99, z], 'white', 6, 'load', 'HVAC-LOAD');
+      this.box('vrf-grille', [1.4, 0.8, 0.025], [x, 1, z - 0.59], 'metal', 6, 'load', 'HVAC-LOAD');
+      for (let l = 0; l < 7; l++) this.box('grille-fin', [1.4, 0.025, 0.04], [x, 0.67 + l * 0.1, z - 0.62], 'white', 6, 'load', 'HVAC-LOAD');
+      for (const dx of [-0.43, 0.43]) {
+        this.cylinder('fan-well', 0.68, 0.05, [x + dx, 1.69, z], 'dark', 6, 'load', 'HVAC-LOAD');
+        this.cylinder('fan-hub', 0.17, 0.07, [x + dx, 1.73, z], 'metal', 6, 'load', 'HVAC-LOAD');
+        for (let a = 0; a < 3; a++) {
+          const blade = this.box('fan-blade', [0.59, 0.018, 0.09], [x + dx, 1.73, z], 'metal', 6, 'load', 'HVAC-LOAD');
+          blade.rotation.y = a * Math.PI / 3;
+        }
+      }
+    }
+    for (const x of [-8, 19]) this.box('roof-cable-tray', [0.45, 0.16, 32], [x, 0.3, 0], 'metal', 6, 'load', 'HVAC-LOAD');
+    for (let i = 0; i < 12; i++) this.box('walkway-paver', [2.2, 0.08, 1.2], [-10, 0.17, -16 + i * 2.8], 'concrete', 6);
+  }
+
+  private cabinet(tag: string, x: number, y: number, z: number, width: number, height: number, accent: string, floor = -1) {
+    this.box('cabinet-plinth', [width + 0.14, 0.18, 0.95], [x, y - height / 2, z], 'concrete', floor, 'equipment', tag);
+    this.box('cabinet-case', [width, height, 0.8], [x, y, z], 'white', floor, 'equipment', tag);
+    this.box('cabinet-door', [width - 0.09, height - 0.12, 0.035], [x, y, z - 0.42], 'metal', floor, 'equipment', tag);
+    this.box('cabinet-header', [width - 0.12, 0.2, 0.04], [x, y + height / 2 - 0.2, z - 0.45], accent, floor, 'equipment', tag);
+    this.box('cabinet-display', [width * 0.35, 0.24, 0.03], [x - width * 0.15, y + 0.3, z - 0.45], 'screen', floor, 'equipment', tag);
+    this.box('cabinet-handle', [0.045, 0.3, 0.07], [x + width * 0.33, y, z - 0.47], 'dark', floor, 'equipment', tag);
+    for (let i = 0; i < 5; i++) this.box('cabinet-vent', [width * 0.7, 0.018, 0.015], [x, y - height * 0.3 + i * 0.055, z - 0.45], 'dark', floor, 'equipment', tag);
+  }
+
+  private buildPlant() {
+    // 10 x 6 m electrical annex = 60 m² plant allowance, separately accessible.
+    this.box('plant-platform', [11, 0.28, 7], [-31, 0.17, -8], 'concrete', -1, 'plant');
+    this.box('plant-rear-wall', [10.5, 3.8, 0.25], [-31, 2, -4.5], 'stone', -1, 'plant');
+    this.box('plant-west-wall', [0.2, 3.8, 6.5], [-36.25, 2, -7.8], 'stone', -1, 'plant');
+    this.sign('ELECTRICAL PLANT  /  13.8 kV', [-31, 3.3, -4.66], 8, 0.5);
+    this.cabinet('HV-01', -34.5, 1.6, -6.2, 1.25, 2.45, 'red');
+    this.cabinet('METER', -35.3, 1.4, -9.5, 0.65, 1.6, 'red');
+    const tx = -31.5, tz = -6.7;
+    this.box('transformer-plinth', [2.8, 0.24, 2.5], [tx, 0.42, tz], 'concrete', -1, 'equipment', 'T1');
+    this.box('transformer-tank', [2, 1.6, 1.6], [tx, 1.42, tz], 'green', -1, 'equipment', 'T1');
+    for (const side of [-1, 1]) for (let i = 0; i < 12; i++) this.box('radiator-fin', [0.34, 1.45, 0.06], [tx + side * 1.12, 1.42, tz - 0.72 + i * 0.13], 'metal', -1, 'equipment', 'T1');
+    this.box('transformer-lid', [2.25, 0.12, 1.85], [tx, 2.3, tz], 'metal', -1, 'equipment', 'T1');
+    for (let i = 0; i < 3; i++) {
+      this.cylinder('bushing', 0.18, 0.65, [tx - 0.65 + i * 0.65, 2.64, tz], 'wood', -1, 'equipment', 'T1');
+      for (let j = 0; j < 5; j++) this.cylinder('bushing-rib', 0.28, 0.055, [tx - 0.65 + i * 0.65, 2.38 + j * 0.11, tz], 'wood', -1, 'equipment', 'T1');
+    }
+    const conservator = this.cylinder('conservator', 0.55, 1.7, [tx, 2.77, tz + 0.7], 'green', -1, 'equipment', 'T1');
     conservator.rotation.z = Math.PI / 2;
-    conservator.position = new Vector3(-5.5, groundY + 2.45, -2.2);
-    conservator.material = trTank.material;
-
-    const buchholzPipe = MeshBuilder.CreateCylinder('T1_buchholz', { diameter: 0.12, height: 0.45 }, this.scene);
-    buchholzPipe.position = new Vector3(-5.5, groundY + 2.25, -2.2);
-    buchholzPipe.material = this.createMaterial('mat_buchholz', new Color3(0.85, 0.7, 0.1));
-
-    const breatherPipe = MeshBuilder.CreateCylinder('T1_breather', { diameter: 0.08, height: 1.4 }, this.scene);
-    breatherPipe.position = new Vector3(-6.2, groundY + 1.7, -1.65);
-    breatherPipe.material = this.createMaterial('mat_pipe', new Color3(0.6, 0.65, 0.7));
-
-    // 3 High Voltage (13.8 kV) Ribbed Porcelain Bushings
-    const hvBushingMeshes: Mesh[] = [];
-    const hvBushMat = this.createMaterial('mat_hvBush', new Color3(0.85, 0.18, 0.18), 0.6, 48);
-    for (let b = 0; b < 3; b++) {
-      const bush = MeshBuilder.CreateCylinder(`T1_hvBush_${b}`, { diameter: 0.16, height: 0.5 }, this.scene);
-      bush.position = new Vector3(-6.0 + b * 0.5, groundY + 2.35, -3.15);
-      bush.material = hvBushMat;
-
-      const stud = MeshBuilder.CreateCylinder(`T1_hvStud_${b}`, { diameter: 0.06, height: 0.15 }, this.scene);
-      stud.position = new Vector3(-6.0 + b * 0.5, groundY + 2.65, -3.15);
-      stud.material = this.createMaterial('mat_brass_stud', new Color3(0.8, 0.65, 0.2));
-      hvBushingMeshes.push(bush, stud);
-    }
-
-    // 4 Low Voltage (400 V) Copper Flag Bushings (X1, X2, X3, X0)
-    const lvBushingMeshes: Mesh[] = [];
-    const lvBushMat = this.createMaterial('mat_lvBush', new Color3(0.2, 0.75, 0.85), 0.5, 48);
-    const copperMat = this.createMaterial('mat_copper', new Color3(0.88, 0.52, 0.22), 0.7, 48);
-    for (let b = 0; b < 4; b++) {
-      const bush = MeshBuilder.CreateCylinder(`T1_lvBush_${b}`, { diameter: 0.14, height: 0.35 }, this.scene);
-      bush.position = new Vector3(-6.1 + b * 0.4, groundY + 2.25, -1.8);
-      bush.material = lvBushMat;
-
-      const spade = MeshBuilder.CreateBox(`T1_lvSpade_${b}`, { width: 0.12, height: 0.15, depth: 0.03 }, this.scene);
-      spade.position = new Vector3(-6.1 + b * 0.4, groundY + 2.45, -1.8);
-      spade.material = copperMat;
-      lvBushingMeshes.push(bush, spade);
-    }
-
-    const nameplate = MeshBuilder.CreatePlane('T1_nameplate', { width: 0.5, height: 0.3 }, this.scene);
-    nameplate.position = new Vector3(-5.5, groundY + 1.2, -1.64);
-    nameplate.material = this.createMaterial('mat_t1_plate', new Color3(0.9, 0.9, 0.92));
-
-    this.registerEquipment('T1', [
-      trTank, t1Plinth, skidL, skidR, coverPlate, conservator, buchholzPipe, breatherPipe, nameplate,
-      ...radiatorMeshes, ...hvBushingMeshes, ...lvBushingMeshes
-    ], new Vector3(-1, 0, -1));
-
-    // -------------------------------------------------------------
-    // 4. Main Distribution Board (MDB-A - 2,500 A Form 4b) & ACB Q0
-    // -------------------------------------------------------------
-    const mdbPlinth = MeshBuilder.CreateBox('MDB_plinth', { width: 3.8, height: 0.15, depth: 1.3 }, this.scene);
-    mdbPlinth.position = new Vector3(-1.5, groundY + 0.075, -2.5);
-    mdbPlinth.material = plinthMat;
-
-    const mdbBody = MeshBuilder.CreateBox('MDB-A_body', { width: 3.5, height: 2.3, depth: 1.05 }, this.scene);
-    mdbBody.position = new Vector3(-1.5, groundY + 1.25, -2.5);
-    mdbBody.material = this.createMaterial('mat_MDB_body', new Color3(0.12, 0.48, 0.78), 0.45, 40);
-
-    // Main ACB Q0 drawout compartment & Electronic Trip Unit
-    const q0Box = MeshBuilder.CreateBox('Q0_body', { width: 0.95, height: 0.95, depth: 0.45 }, this.scene);
-    q0Box.position = new Vector3(-2.4, groundY + 1.25, -1.85);
-    q0Box.material = this.createMaterial('mat_Q0_body', new Color3(0.08, 0.32, 0.58), 0.5, 48);
-
-    const q0Screen = MeshBuilder.CreatePlane('Q0_screen', { width: 0.35, height: 0.22 }, this.scene);
-    q0Screen.position = new Vector3(-2.4, groundY + 1.45, -1.61);
-    q0Screen.material = this.createMaterial('mat_q0_lcd', new Color3(0.2, 0.95, 0.4), 0.8, 64, 1.0, new Color3(0.05, 0.3, 0.1));
-
-    const q0Handle = MeshBuilder.CreateBox('Q0_handle', { width: 0.35, height: 0.06, depth: 0.08 }, this.scene);
-    q0Handle.position = new Vector3(-2.4, groundY + 1.05, -1.61);
-    q0Handle.material = this.createMaterial('mat_q0_handle', new Color3(0.8, 0.8, 0.85));
-
-    // Transparent Polycarbonate Busbar Window showing L1, L2, L3, N copper busbars
-    const busWindow = MeshBuilder.CreateBox('MDB_buswindow', { width: 3.1, height: 0.42, depth: 0.05 }, this.scene);
-    busWindow.position = new Vector3(-1.5, groundY + 2.05, -1.95);
-    busWindow.material = this.createMaterial('mat_bus_window', new Color3(0.2, 0.3, 0.4), 0.8, 64, 0.65);
-
-    const busbarMeshes: Mesh[] = [];
-    const busColors = [
-      new Color3(0.85, 0.2, 0.2),  // Phase A - Red
-      new Color3(0.9, 0.75, 0.1),  // Phase B - Yellow
-      new Color3(0.15, 0.4, 0.9),  // Phase C - Blue
-      new Color3(0.2, 0.8, 0.9)    // Neutral - Cyan
-    ];
-    for (let b = 0; b < 4; b++) {
-      const bus = MeshBuilder.CreateBox(`MDB_bus_${b}`, { width: 3.0, height: 0.04, depth: 0.03 }, this.scene);
-      bus.position = new Vector3(-1.5, groundY + 2.18 - b * 0.08, -2.05);
-      bus.material = this.createMaterial(`mat_bus_${b}`, busColors[b]);
-      busbarMeshes.push(bus);
-    }
-
-    // Outgoing Feeder breaker compartments & rotary handles
-    const feederDoors: Mesh[] = [];
-    for (let col = 0; col < 3; col++) {
-      for (let row = 0; row < 2; row++) {
-        const door = MeshBuilder.CreateBox(`MDB_door_${col}_${row}`, { width: 0.65, height: 0.45, depth: 0.04 }, this.scene);
-        door.position = new Vector3(-1.3 + col * 0.75, groundY + 1.45 - row * 0.52, -1.95);
-        door.material = this.createMaterial(`mat_mdb_door_${col}_${row}`, new Color3(0.18, 0.22, 0.28));
-
-        const rotHandle = MeshBuilder.CreateCylinder(`MDB_rot_${col}_${row}`, { diameter: 0.09, height: 0.06 }, this.scene);
-        rotHandle.rotation.x = Math.PI / 2;
-        rotHandle.position = new Vector3(-1.3 + col * 0.75, groundY + 1.45 - row * 0.52, -1.91);
-        rotHandle.material = this.createMaterial(`mat_rot_${col}_${row}`, new Color3(0.85, 0.15, 0.15));
-
-        feederDoors.push(door, rotHandle);
+    for (let i = 0; i < 3; i++) this.cabinet('MDB-A', -28.9 + i * 0.9, 1.45, -6.2, 0.88, 2.2, 'blue');
+    this.cabinet('Q0', -28.9, 1.42, -6.8, 0.5, 0.75, 'blue');
+    this.cabinet('C1', -28, 1.4, -9.5, 1.8, 2.1, 'green');
+    this.cabinet('QC', -29.5, 1.3, -9.5, 0.6, 1.8, 'green');
+    for (let i = 0; i < 9; i++) this.box('safety-stripe', [0.35, 0.02, 0.35], [-34.5 + i * 0.85, 0.325, -11.25], 'yellow', -1, 'plant');
+    // Generator and dedicated pump compound on the rear service court.
+    this.box('generator-plinth', [5.4, 0.28, 2.8], [-31, 0.24, 4], 'concrete', -1, 'equipment', 'GEN-1');
+    this.box('generator-skid', [4.8, 0.4, 2.2], [-31, 0.58, 4], 'dark', -1, 'equipment', 'GEN-1');
+    this.box('generator-canopy', [4.5, 2.1, 2], [-31, 1.75, 4], 'green', -1, 'equipment', 'GEN-1');
+    for (let i = 0; i < 13; i++) this.box('generator-louver', [1.1, 0.055, 0.045], [-32.3, 1 + i * 0.12, 2.97], 'dark', -1, 'equipment', 'GEN-1');
+    this.box('generator-door', [1.5, 1.75, 0.03], [-30.2, 1.75, 2.97], 'metal', -1, 'equipment', 'GEN-1');
+    this.box('generator-display', [0.5, 0.3, 0.04], [-30.2, 1.95, 2.93], 'screen', -1, 'equipment', 'GEN-1');
+    const exhaust = this.cylinder('exhaust-silencer', 0.42, 2.5, [-31, 3.05, 4], 'metal', -1, 'equipment', 'GEN-1');
+    exhaust.rotation.z = Math.PI / 2;
+    this.cylinder('exhaust-stack', 0.18, 1.2, [-29.8, 3.6, 4], 'metal', -1, 'equipment', 'GEN-1');
+    this.cabinet('ATS-E', -27.5, 1.25, 3.8, 1.1, 2, 'yellow');
+    this.cabinet('EDB', -23, 1.25, -1.7, 1.1, 2, 'yellow', 0);
+    this.cabinet('MDP', -23, 1.25, 1.5, 1.1, 2, 'blue', 0);
+    this.cabinet('FP-ATS', -34, 1.25, 12, 1.1, 2, 'red');
+    this.box('pump-pad', [7.5, 0.24, 3.7], [-31, 0.23, 12], 'concrete', -1, 'plant');
+    for (let i = 0; i < 3; i++) {
+      const x = -31 + i * 1.5, tag = i === 0 ? 'FP-MOTOR' : 'WP-MOTOR', mat = i === 0 ? 'red' : 'blue';
+      const motor = this.cylinder('pump-motor', 0.66, 1.15, [x, 0.8, 12], mat, -1, 'equipment', tag);
+      motor.rotation.x = Math.PI / 2;
+      this.cylinder('pump-casing', 0.75, 0.6, [x, 0.8, 11.15], mat, -1, 'equipment', tag);
+      this.cylinder('pump-riser', 0.16, 1.7, [x, 1.3, 10.9], mat, -1, 'equipment', tag);
+      for (let j = 0; j < 7; j++) {
+        const fin = this.cylinder('motor-fin', 0.72, 0.03, [x, 0.8, 11.6 + j * 0.13], mat, -1, 'equipment', tag);
+        fin.rotation.x = Math.PI / 2;
       }
     }
+    for (let f = 0; f < 6; f++) {
+      const h = LEVELS[f + 1] - LEVELS[f];
+      for (const x of [-23.8, -22.8]) this.box('riser-rail', [0.055, h, 0.08], [x, h / 2, -4], 'metal', f, 'equipment', 'RISER');
+      for (let y = 0.2; y < h; y += 0.4) this.box('riser-rung', [1.05, 0.035, 0.06], [-23.3, y, -4], 'metal', f, 'equipment', 'RISER');
+    }
+  }
 
-    this.registerEquipment('MDB-A', [mdbBody, mdbPlinth, busWindow, ...busbarMeshes, ...feederDoors], new Vector3(0, 0, -1));
-    this.registerEquipment('Q0', [q0Box, q0Screen, q0Handle], new Vector3(0, 0, -0.8));
+  private sign(text: string, pos: number[], width: number, height: number, floor = -1, role = 'plant') {
+    const tex = new DynamicTexture(`sign-${text}`, { width: 1024, height: 128 }, this.scene, true);
+    tex.drawText(text, null, 82, '600 50px Arial', '#f3ede0', '#253c37', true);
+    const mat = new StandardMaterial(`sign-${text}`, this.scene);
+    mat.diffuseTexture = tex;
+    mat.emissiveColor = new Color3(0.25, 0.25, 0.25);
+    const plane = MeshBuilder.CreatePlane('sign', { width, height }, this.scene);
+    plane.position.set(pos[0], pos[1], pos[2]);
+    this.attach(plane, 'dark', floor, role);
+    plane.material = mat;
+  }
 
-    // -------------------------------------------------------------
-    // 5. APFC Capacitor Bank & Detuned Reactors (C1 & QC - 400 kVAr)
-    // -------------------------------------------------------------
-    const apfcPlinth = MeshBuilder.CreateBox('APFC_plinth', { width: 2.1, height: 0.15, depth: 1.3 }, this.scene);
-    apfcPlinth.position = new Vector3(1.6, groundY + 0.075, -2.5);
-    apfcPlinth.material = plinthMat;
+  private mergeStaticGeometry() {
+    const groups = new Map<string, Part[]>();
+    for (const part of this.parts) {
+      const key = `${part.floor}|${part.role}|${part.tag ?? ''}|${part.mesh.material?.uniqueId}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(part);
+    }
+    const merged: Part[] = [];
+    for (const parts of groups.values()) {
+      const first = parts[0];
+      const parent = first.mesh.parent;
+      // Merge in floor-local coordinates so exploded offsets move every detail together.
+      for (const part of parts) { part.mesh.parent = null; part.mesh.computeWorldMatrix(true); }
+      const mesh = parts.length > 1 ? Mesh.MergeMeshes(parts.map(p => p.mesh), true, true, undefined, false, false) : first.mesh;
+      if (!mesh) continue;
+      mesh.parent = parent;
+      mesh.isPickable = Boolean(first.tag);
+      mesh.metadata = { tag: first.tag };
+      mesh.receiveShadows = true;
+      mesh.name = `${first.role}-${first.tag ?? first.floor}-${mesh.material?.name}`;
+      merged.push({ ...first, mesh });
+      if (mesh.material?.alpha === 1 && first.role !== 'ground' && first.role !== 'context') this.shadows.addShadowCaster(mesh);
+    }
+    this.parts = merged;
+  }
 
-    const apfcBody = MeshBuilder.CreateBox('C1_body', { width: 1.85, height: 2.3, depth: 1.05 }, this.scene);
-    apfcBody.position = new Vector3(1.6, groundY + 1.25, -2.5);
-    apfcBody.material = this.createMaterial('mat_APFC_body', new Color3(0.12, 0.68, 0.45), 0.45, 40);
+  private buildLabels() {
+    for (const [tag, x, y, z, floor] of [
+      ['T1 · 1,250 kVA', -31.5, 4, -6.7, -1], ['MDB · 2,500 A', -27, 3.6, -6, -1],
+      ['GEN · 400 kVA', -31, 4.5, 4, -1], ['36 × VRF', 8, 3.5, 0, 6],
+      ...LEVELS.slice(0, 6).map((_, i) => [`L${i + 1} · ${i < 2 ? 'RETAIL' : 'OFFICE'}`, 26, 2, -20, i])
+    ] as [string, number, number, number, number][]) {
+      const tex = new DynamicTexture(`label-${tag}`, { width: 512, height: 96 }, this.scene, true);
+      tex.drawText(tag, null, 63, '600 36px Arial', '#ecf7f1', '#24483e', true);
+      const material = new StandardMaterial(`label-${tag}`, this.scene);
+      material.diffuseTexture = tex;
+      material.disableLighting = true;
+      material.emissiveColor = Color3.White();
+      const mesh = MeshBuilder.CreatePlane(tag, { width: 6, height: 1.12 }, this.scene);
+      mesh.material = material;
+      mesh.position.set(x, y, z);
+      mesh.billboardMode = Mesh.BILLBOARDMODE_ALL;
+      mesh.isPickable = false;
+      if (floor >= 0) mesh.parent = this.floors[floor];
+      mesh.metadata = { floor };
+      this.labels.push(mesh);
+    }
+  }
 
-    const reactorChamber = MeshBuilder.CreateBox('C1_reactors', { width: 1.65, height: 0.75, depth: 0.85 }, this.scene);
-    reactorChamber.position = new Vector3(1.6, groundY + 0.5, -2.4);
-    reactorChamber.material = this.createMaterial('mat_reactors_box', new Color3(0.1, 0.48, 0.32));
-
-    // 16 Cylindrical Aluminum Capacitor Cans
-    const capacitorCans: Mesh[] = [];
-    const canMat = this.createMaterial('mat_cap_can', new Color3(0.85, 0.88, 0.92), 0.7, 50);
-    for (let r = 0; r < 2; r++) {
-      for (let c = 0; c < 8; c++) {
-        const can = MeshBuilder.CreateCylinder(`C1_can_${r}_${c}`, { diameter: 0.12, height: 0.45 }, this.scene);
-        can.position = new Vector3(1.0 + c * 0.16, groundY + 1.65 - r * 0.35, -2.3);
-        can.material = canMat;
-        capacitorCans.push(can);
+  private rebuildRoutes() {
+    for (const route of this.routes) { route.mesh.dispose(); route.markers.forEach(m => m.dispose()); }
+    this.routes = [];
+    const y = (floor: number) => LEVELS[floor] + floor * this.options.explodedOffset * 5;
+    const add = (kind: string, points: Vector3[], floor = -1) => {
+      const materialName = `route-${kind}`;
+      let material = this.materials.get(materialName);
+      if (!material) {
+        const color = kind === 'emergency' ? '#e8b14e' : kind === 'fire' || kind === 'hv' ? '#df6954' : '#51bca3';
+        material = this.mat(materialName, color, 0.35, 0.15);
+        material.emissiveColor = Color3.FromHexString(color).scale(0.7);
       }
-    }
-
-    // Microprocessor Controller on Door
-    const controllerPanel = MeshBuilder.CreateBox('C1_controller', { width: 0.6, height: 0.4, depth: 0.05 }, this.scene);
-    controllerPanel.position = new Vector3(1.2, groundY + 1.85, -1.95);
-    controllerPanel.material = this.createMaterial('mat_controller_face', new Color3(0.15, 0.18, 0.22));
-
-    const controllerLcd = MeshBuilder.CreatePlane('C1_lcd', { width: 0.35, height: 0.16 }, this.scene);
-    controllerLcd.position = new Vector3(1.2, groundY + 1.92, -1.91);
-    controllerLcd.material = this.createMaterial('mat_apfc_lcd', new Color3(0.15, 0.95, 0.5), 0.8, 64, 1.0, new Color3(0.05, 0.35, 0.15));
-
-    // QC incoming isolator switch
-    const qcBox = MeshBuilder.CreateBox('QC_body', { width: 0.45, height: 0.45, depth: 0.2 }, this.scene);
-    qcBox.position = new Vector3(2.1, groundY + 1.5, -1.93);
-    qcBox.material = this.createMaterial('mat_QC_switch', new Color3(0.08, 0.45, 0.28));
-
-    const qcHandle = MeshBuilder.CreateCylinder('QC_handle', { diameter: 0.08, height: 0.15 }, this.scene);
-    qcHandle.rotation.x = Math.PI / 2;
-    qcHandle.position = new Vector3(2.1, groundY + 1.5, -1.8);
-    qcHandle.material = this.createMaterial('mat_qc_red', new Color3(0.9, 0.15, 0.15));
-
-    this.registerEquipment('C1', [apfcBody, apfcPlinth, reactorChamber, controllerPanel, controllerLcd, ...capacitorCans], new Vector3(1.5, 0, -1));
-    this.registerEquipment('QC', [qcBox, qcHandle], new Vector3(1.5, 0, -0.8));
-  }
-
-  /**
-   * 9. Emergency Infrastructure & Dedicated Fire Protection:
-   * - 400 kVA Standby Generator (GEN-1) with sound-attenuated acoustic canopy
-   * - Sub-base fuel tank with fuel filler cap & level gauge
-   * - Rooftop exhaust silencer / muffler with rain cap
-   * - Essential ATS (ATS-E)
-   * - Dedicated Fire Pump Controller (FP-ATS) in safety red
-   * - 37 kW Fire Pump Motor & Centrifugal Pump (FP-MOTOR)
-   */
-  private buildEmergencyAndFireSystem() {
-    const groundY = 0.05;
-    const plinthMat = this.createMaterial('mat_plinth_gen', new Color3(0.78, 0.81, 0.86), 0.25, 16);
-
-    // 1. Standby Diesel Generator (GEN-1 - 400 kVA / 320 kW)
-    const genPlinth = MeshBuilder.CreateBox('GEN_plinth', { width: 4.2, height: 0.2, depth: 2.2 }, this.scene);
-    genPlinth.position = new Vector3(8.5, groundY + 0.1, -2.5);
-    genPlinth.material = plinthMat;
-
-    const genCanopy = MeshBuilder.CreateBox('GEN-1_canopy', { width: 3.6, height: 2.2, depth: 1.7 }, this.scene);
-    genCanopy.position = new Vector3(8.5, groundY + 1.3, -2.5);
-    genCanopy.material = this.createMaterial('mat_GEN_canopy', new Color3(0.95, 0.65, 0.12), 0.5, 48);
-
-    const fuelSkid = MeshBuilder.CreateBox('GEN-1_skid', { width: 3.75, height: 0.35, depth: 1.8 }, this.scene);
-    fuelSkid.position = new Vector3(8.5, groundY + 0.35, -2.5);
-    fuelSkid.material = this.createMaterial('mat_gen_skid', new Color3(0.25, 0.28, 0.32));
-
-    const intakeLouver = MeshBuilder.CreateBox('GEN-1_intake', { width: 0.1, height: 1.4, depth: 1.3 }, this.scene);
-    intakeLouver.position = new Vector3(6.65, groundY + 1.4, -2.5);
-    intakeLouver.material = this.createMaterial('mat_louver', new Color3(0.18, 0.2, 0.25));
-
-    const muffler = MeshBuilder.CreateCylinder('GEN-1_exhaust', { diameter: 0.45, height: 1.9 }, this.scene);
-    muffler.rotation.z = Math.PI / 2;
-    muffler.position = new Vector3(8.5, groundY + 2.65, -2.5);
-    muffler.material = this.createMaterial('mat_muffler', new Color3(0.3, 0.32, 0.35), 0.6, 32);
-
-    const exhaustPipe = MeshBuilder.CreateCylinder('GEN-1_pipe', { diameter: 0.22, height: 0.9 }, this.scene);
-    exhaustPipe.position = new Vector3(9.3, groundY + 3.0, -2.5);
-    exhaustPipe.material = muffler.material;
-
-    const genController = MeshBuilder.CreatePlane('GEN-1_lcd', { width: 0.45, height: 0.3 }, this.scene);
-    genController.position = new Vector3(8.5, groundY + 1.5, -1.64);
-    genController.material = this.createMaterial('mat_gen_lcd', new Color3(0.15, 0.95, 0.85), 0.8, 64, 1.0, new Color3(0.05, 0.35, 0.3));
-
-    const estopBtn = MeshBuilder.CreateCylinder('GEN-1_estop', { diameter: 0.12, height: 0.08 }, this.scene);
-    estopBtn.rotation.x = Math.PI / 2;
-    estopBtn.position = new Vector3(9.1, groundY + 1.3, -1.63);
-    estopBtn.material = this.createMaterial('mat_estop', new Color3(0.95, 0.1, 0.1));
-
-    const qgBox = MeshBuilder.CreateBox('QG_body', { width: 0.65, height: 0.75, depth: 0.35 }, this.scene);
-    qgBox.position = new Vector3(6.9, groundY + 1.3, -1.9);
-    qgBox.material = this.createMaterial('mat_QG', new Color3(0.78, 0.48, 0.08));
-
-    this.registerEquipment('GEN-1', [genCanopy, genPlinth, fuelSkid, intakeLouver, muffler, exhaustPipe, genController, estopBtn], new Vector3(3, 0, -1));
-    this.registerEquipment('QG', [qgBox], new Vector3(2.5, 0, -0.8));
-
-    // 2. Essential ATS (ATS-E - 400 A 4-Pole Dual Motorized Switch)
-    const atsePlinth = MeshBuilder.CreateBox('ATSE_plinth', { width: 1.3, height: 0.15, depth: 0.8 }, this.scene);
-    atsePlinth.position = new Vector3(4.0, groundY + 0.075, -2.5);
-    atsePlinth.material = plinthMat;
-
-    const atseBox = MeshBuilder.CreateBox('ATS-E_box', { width: 1.15, height: 1.7, depth: 0.65 }, this.scene);
-    atseBox.position = new Vector3(4.0, groundY + 1.2, -2.5);
-    atseBox.material = this.createMaterial('mat_ATSE', new Color3(0.9, 0.55, 0.15), 0.45, 36);
-
-    const normalLed = MeshBuilder.CreateSphere('ATSE_normalLed', { diameter: 0.08 }, this.scene);
-    normalLed.position = new Vector3(3.8, groundY + 1.6, -2.16);
-    normalLed.material = this.createMaterial('mat_atse_norm', new Color3(0.1, 0.9, 0.2));
-
-    const emerLed = MeshBuilder.CreateSphere('ATSE_emerLed', { diameter: 0.08 }, this.scene);
-    emerLed.position = new Vector3(4.2, groundY + 1.6, -2.16);
-    emerLed.material = this.createMaterial('mat_atse_emer', new Color3(0.95, 0.7, 0.1));
-
-    this.registerEquipment('ATS-E', [atseBox, atsePlinth, normalLed, emerLed], new Vector3(2, 0, -1));
-
-    // 3. Dedicated Fire Pump Controller & ATS (FP-ATS) - In Basement
-    const basementY = -2.5 + 0.05;
-    const fpAtsBox = MeshBuilder.CreateBox('FP-ATS_box', { width: 1.25, height: 1.75, depth: 0.65 }, this.scene);
-    fpAtsBox.position = new Vector3(2.5, basementY + 1.25, -1.5);
-    fpAtsBox.material = this.createMaterial('mat_FPATS', new Color3(0.95, 0.18, 0.18), 0.5, 48);
-
-    const fpHandle = MeshBuilder.CreateCylinder('FPATS_handle', { diameter: 0.1, height: 0.15 }, this.scene);
-    fpHandle.rotation.x = Math.PI / 2;
-    fpHandle.position = new Vector3(2.5, basementY + 1.3, -1.16);
-    fpHandle.material = this.createMaterial('mat_fphandle', new Color3(0.15, 0.15, 0.15));
-
-    // 4. Fire Pump Motor (FP-MOTOR - 37 kW / 50 HP) & Centrifugal Pump
-    const motorMat = this.createMaterial('mat_FPMotor', new Color3(0.88, 0.15, 0.15), 0.5, 48);
-    const fpMotor = MeshBuilder.CreateCylinder('FP_motor', { diameter: 0.75, height: 1.3 }, this.scene);
-    fpMotor.rotation.z = Math.PI / 2;
-    fpMotor.position = new Vector3(5.0, basementY + 0.55, -1.5);
-    fpMotor.material = motorMat;
-
-    const fpPump = MeshBuilder.CreateCylinder('FP_casing', { diameter: 0.95, height: 0.75 }, this.scene);
-    fpPump.position = new Vector3(6.1, basementY + 0.55, -1.5);
-    fpPump.material = motorMat;
-
-    const fpPipe = MeshBuilder.CreateCylinder('FP_riser_pipe', { diameter: 0.28, height: 2.3 }, this.scene);
-    fpPipe.position = new Vector3(6.1, basementY + 1.7, -1.5);
-    fpPipe.material = motorMat;
-
-    this.registerEquipment('FP-ATS', [fpAtsBox, fpHandle], new Vector3(1, -1, 0));
-    this.registerEquipment('FP-MOTOR', [fpMotor, fpPump, fpPipe], new Vector3(2, -1, 0));
-
-    // 5. Basement Water Booster Pumps (WP-MOTOR) & Mechanical Board (MDP)
-    const mdpPanel = MeshBuilder.CreateBox('MDP_box', { width: 1.15, height: 1.55, depth: 0.45 }, this.scene);
-    mdpPanel.position = new Vector3(3.0, basementY + 1.25, 1.5);
-    mdpPanel.material = this.createMaterial('mat_MDP', new Color3(0.22, 0.48, 0.88), 0.45, 36);
-
-    const wpMat = this.createMaterial('mat_WP', new Color3(0.15, 0.55, 0.85), 0.5, 40);
-    const pump1 = MeshBuilder.CreateCylinder('WP_pump1', { diameter: 0.65, height: 0.95 }, this.scene);
-    pump1.position = new Vector3(5.0, basementY + 0.48, 1.0);
-    pump1.material = wpMat;
-
-    const pump2 = MeshBuilder.CreateCylinder('WP_pump2', { diameter: 0.65, height: 0.95 }, this.scene);
-    pump2.position = new Vector3(5.0, basementY + 0.48, 2.5);
-    pump2.material = wpMat;
-
-    const wpTank = MeshBuilder.CreateCylinder('WP_tank', { diameter: 0.8, height: 1.5 }, this.scene);
-    wpTank.position = new Vector3(6.5, basementY + 0.75, 1.8);
-    wpTank.material = this.createMaterial('mat_wp_tank', new Color3(0.2, 0.65, 0.9));
-
-    this.registerEquipment('MDP', [mdpPanel], new Vector3(1, -1, 0));
-    this.registerEquipment('WP-MOTOR', [pump1, pump2, wpTank], new Vector3(2, -1, 0));
-
-    // 6. Rooftop Elevator Motor & VRF Condenser Units
-    const floorHeight = 2.8;
-    const roofY = 7 * floorHeight + 0.05;
-
-    const liftBox = MeshBuilder.CreateBox('LIFT_penthouse', { width: 3.2, height: 2.3, depth: 2.6 }, this.scene);
-    liftBox.position = new Vector3(-2.5, roofY + 1.15, -1.5);
-    liftBox.material = this.createMaterial('mat_lift_penthouse', new Color3(0.78, 0.82, 0.86));
-
-    const liftMotor = MeshBuilder.CreateCylinder('LIFT_motor', { diameter: 0.85, height: 1.3 }, this.scene);
-    liftMotor.rotation.z = Math.PI / 2;
-    liftMotor.position = new Vector3(-2.5, roofY + 1.25, -1.5);
-    liftMotor.material = this.createMaterial('mat_lift_motor', new Color3(0.28, 0.52, 0.92));
-
-    this.registerEquipment('LIFT-MOTOR', [liftBox, liftMotor], new Vector3(-1, 7 * 2.2, 0));
-
-    const vrfMeshes: Mesh[] = [];
-    const vrfMat = this.createMaterial('mat_VRF', new Color3(0.22, 0.65, 0.85), 0.4, 32);
-    for (let i = 0; i < 4; i++) {
-      const vrfUnit = MeshBuilder.CreateBox(`VRF_unit_${i}`, { width: 1.25, height: 1.55, depth: 0.95 }, this.scene);
-      vrfUnit.position = new Vector3(1.5 + i * 1.5, roofY + 0.78, 1.5);
-      vrfUnit.material = vrfMat;
-
-      const fanGrille = MeshBuilder.CreateCylinder(`VRF_fan_${i}`, { diameter: 0.7, height: 0.08 }, this.scene);
-      fanGrille.position = new Vector3(1.5 + i * 1.5, roofY + 1.58, 1.5);
-      fanGrille.material = this.createMaterial(`mat_vrf_fan_${i}`, new Color3(0.2, 0.25, 0.3));
-
-      vrfMeshes.push(vrfUnit, fanGrille);
-    }
-    this.registerEquipment('HVAC-LOAD', vrfMeshes, new Vector3(2, 7 * 2.2, 0));
-  }
-
-  /**
-   * 10. Cable Feeders, Vertical Ladder Riser & Busway Trunking
-   */
-  private buildCableFeedersAndRiser() {
-    const floorHeight = 2.8;
-
-    // Vertical Riser Shaft Cable Ladder (Galvanized Steel)
-    const riserMat = this.createMaterial('mat_riser', new Color3(0.52, 0.56, 0.62), 0.4, 28);
-    const riserHeight = 7 * floorHeight + 2.5;
-
-    // Cable ladder side rails: width = 0.8m, centered at x = -2.5, z = -0.2
-    const railL = MeshBuilder.CreateBox('RISER_railL', { width: 0.06, height: riserHeight, depth: 0.08 }, this.scene);
-    railL.position = new Vector3(-2.9, riserHeight / 2 - 2.5, -0.2);
-    railL.material = riserMat;
-
-    const railR = MeshBuilder.CreateBox('RISER_railR', { width: 0.06, height: riserHeight, depth: 0.08 }, this.scene);
-    railR.position = new Vector3(-2.1, riserHeight / 2 - 2.5, -0.2);
-    railR.material = riserMat;
-
-    this.shellMeshes.push(railL, railR);
-
-    // Cable ladder rungs spaced every 0.5m
-    for (let ry = 0.5; ry < riserHeight; ry += 0.5) {
-      const rung = MeshBuilder.CreateBox(`RISER_rung_${Math.round(ry * 10)}`, { width: 0.8, height: 0.03, depth: 0.03 }, this.scene);
-      rung.position = new Vector3(-2.5, ry, -0.2);
-      rung.material = riserMat;
-      this.shellMeshes.push(rung);
-    }
-
-    // Overhead Cable Tray from MDB to Riser (Galvanized perforated tray)
-    const trayMat = this.createMaterial('mat_tray', new Color3(0.55, 0.60, 0.66), 0.4, 30);
-    // Tray along X from MDB (x = -1.5) to Riser (x = -2.5) at y = 2.52, z = -2.2
-    const trayX = MeshBuilder.CreateBox('TRAY_MDB_X', { width: 1.2, height: 0.08, depth: 0.35 }, this.scene);
-    trayX.position = new Vector3(-2.0, 2.52, -2.2);
-    trayX.material = trayMat;
-    // Tray along Z from z = -2.2 to riser at z = -0.2
-    const trayZ = MeshBuilder.CreateBox('TRAY_MDB_Z', { width: 0.35, height: 0.08, depth: 2.1 }, this.scene);
-    trayZ.position = new Vector3(-2.5, 2.52, -1.2);
-    trayZ.material = trayMat;
-    this.shellMeshes.push(trayX, trayZ);
-
-    // Floor Distribution Panels (P-F1 to P-F6) mounted on columns next to riser
-    for (let f = 1; f <= 6; f++) {
-      const y = f * floorHeight + 0.05;
-      const isRetail = f <= 2;
-      const tag = `P-F${f}`;
-
-      const panelColor = isRetail ? new Color3(0.1, 0.65, 0.75) : new Color3(0.12, 0.52, 0.85);
-      const panel = MeshBuilder.CreateBox(`${tag}_box`, { width: 0.95, height: 1.35, depth: 0.35 }, this.scene);
-      panel.position = new Vector3(-2.5, y + 1.25, 0.4);
-      panel.material = this.createMaterial(`mat_${tag}`, panelColor, 0.4, 32);
-
-      const subMeter = MeshBuilder.CreatePlane(`${tag}_meter`, { width: 0.35, height: 0.2 }, this.scene);
-      subMeter.position = new Vector3(-2.5, y + 1.6, 0.58);
-      subMeter.material = this.createMaterial(`mat_${tag}_meter`, new Color3(0.1, 0.9, 0.85), 0.8, 64, 1.0, new Color3(0.05, 0.3, 0.28));
-
-      this.registerEquipment(tag, [panel, subMeter], new Vector3(0, f * 2.2, 0));
-    }
-
-    // Essential Distribution Panel (EDB) - Level 2
-    const edbY = 2 * floorHeight + 0.05;
-    const edbPanel = MeshBuilder.CreateBox('EDB_box', { width: 1.05, height: 1.45, depth: 0.45 }, this.scene);
-    edbPanel.position = new Vector3(-2.5, edbY + 1.25, -2.0);
-    edbPanel.material = this.createMaterial('mat_EDB', new Color3(0.92, 0.52, 0.12), 0.45, 36);
-
-    const itRackMat = this.createMaterial('mat_IT_rack', new Color3(0.2, 0.24, 0.28), 0.5, 40);
-    const itRack1 = MeshBuilder.CreateBox('IT_rack_1', { width: 0.9, height: 2.05, depth: 1.0 }, this.scene);
-    itRack1.position = new Vector3(-1.0, edbY + 1.05, -2.0);
-    itRack1.material = itRackMat;
-
-    const itRack2 = MeshBuilder.CreateBox('IT_rack_2', { width: 0.9, height: 2.05, depth: 1.0 }, this.scene);
-    itRack2.position = new Vector3(0.1, edbY + 1.05, -2.0);
-    itRack2.material = itRackMat;
-
-    this.registerEquipment('EDB', [edbPanel, itRack1, itRack2], new Vector3(-2, 2 * 2.2, 0));
-
-    // High Voltage 13.8 kV Feeder Path (Red Conduit) - Orthogonal 90° Routing
-    const hvTube = MeshBuilder.CreateTube('CABLE_HV', {
-      path: [
-        new Vector3(-10.2, 0.5, -2.5),
-        new Vector3(-8.5, 0.5, -2.5),
-        new Vector3(-8.5, 2.4, -2.5),
-        new Vector3(-8.5, 2.4, -2.8),
-        new Vector3(-6.0, 2.4, -2.8),
-        new Vector3(-6.0, 2.2, -2.8)
-      ],
-      radius: 0.08
-    }, this.scene);
-    hvTube.material = this.createMaterial('mat_cable_HV', new Color3(0.9, 0.2, 0.2), 0.6, 40);
-    this.cableMeshes.set('HV', [hvTube]);
-
-    // Copper Busway Trunking (Transformer to MDB-A)
-    const busduct = MeshBuilder.CreateBox('BUSDUCT_T1_MDB', { width: 3.2, height: 0.35, depth: 0.35 }, this.scene);
-    busduct.position = new Vector3(-3.5, 2.45, -2.5);
-    busduct.material = this.createMaterial('mat_busduct', new Color3(0.85, 0.55, 0.25), 0.6, 40);
-    this.cableMeshes.set('LV_MAIN', [busduct]);
-
-    // Floor Feeder Cables - Clean Orthogonal BIM Routing
-    // Feeders emerge from MDB top -> enter overhead tray -> turn into riser shaft -> climb strictly vertically on ladder -> branch 90° into panel
-    const feederMat = this.createMaterial('mat_feeder_cable', new Color3(0.12, 0.50, 0.92), 0.5, 40);
-
-    for (let f = 1; f <= 6; f++) {
-      const y = f * floorHeight;
-      const targetPanelY = y + 1.25;
-      // Evenly space the 6 cables side-by-side across the cable ladder (-2.8 to -2.2)
-      const cableX = -2.8 + (f - 1) * 0.12;
-
-      const feederTube = MeshBuilder.CreateTube(`CABLE_F${f}`, {
-        path: [
-          // 1. Exit top of MDB breaker compartment
-          new Vector3(-1.8 + (f - 1) * 0.1, 2.35, -2.2),
-          // 2. Rise vertically into overhead horizontal cable tray
-          new Vector3(-1.8 + (f - 1) * 0.1, 2.52, -2.2),
-          // 3. Run horizontally along tray towards riser shaft (along X)
-          new Vector3(cableX, 2.52, -2.2),
-          // 4. Turn 90° horizontally along Z into riser shaft entrance
-          new Vector3(cableX, 2.52, -0.2),
-          // 5. Rise STRICTLY VERTICAL along the cable ladder directly to target floor
-          new Vector3(cableX, targetPanelY + 0.3, -0.2),
-          // 6. Branch 90° horizontal forward (along Z) out of the riser towards the panel
-          new Vector3(cableX, targetPanelY + 0.3, 0.4),
-          // 7. Drop 90° into top of floor distribution panel
-          new Vector3(-2.5, targetPanelY + 0.65, 0.4)
-        ],
-        radius: 0.032
-      }, this.scene);
-      feederTube.material = feederMat;
-      this.cableMeshes.set(`F${f}`, [feederTube]);
-    }
-
-    // Emergency Feeder Path (Generator to ATS) - Orthogonal 90° Routing
-    const genTube = MeshBuilder.CreateTube('CABLE_GEN_ATS', {
-      path: [
-        new Vector3(7.0, 1.3, -1.9),
-        new Vector3(5.5, 1.3, -1.9),
-        new Vector3(5.5, 1.3, -2.2),
-        new Vector3(4.0, 1.3, -2.2)
-      ],
-      radius: 0.06
-    }, this.scene);
-    genTube.material = this.createMaterial('mat_cable_EMER', new Color3(0.95, 0.6, 0.12), 0.6, 40);
-    this.cableMeshes.set('GEN', [genTube]);
-  }
-
-  private registerEquipment(tag: string, meshes: Mesh[], explodeOffset: Vector3) {
-    this.equipmentMeshes.set(tag, meshes);
-
-    meshes.forEach((mesh) => {
-      this.originalPositions.set(mesh, mesh.position.clone());
-      this.explodedOffsets.set(mesh, explodeOffset);
-
-      mesh.isPickable = true;
-      mesh.actionManager = new ActionManager(this.scene);
-
-      mesh.actionManager.registerAction(
-        new ExecuteCodeAction(ActionManager.OnPickTrigger, () => {
-          this.selectEquipment(tag);
-        })
-      );
-
-      mesh.actionManager.registerAction(
-        new ExecuteCodeAction(ActionManager.OnPointerOverTrigger, () => {
-          this.callbacks.onHoverEquipment(tag);
-        })
-      );
-      mesh.actionManager.registerAction(
-        new ExecuteCodeAction(ActionManager.OnPointerOutTrigger, () => {
-          this.callbacks.onHoverEquipment(null);
-        })
-      );
-    });
-  }
-
-  public selectEquipment(tag: string | null) {
-    if (this.selectedTag === tag && tag !== null) {
-      this.selectedTag = null;
-      this.callbacks.onSelectEquipment(null);
-      this.updateHighlighting();
-      return;
-    }
-
-    this.selectedTag = tag;
-    this.callbacks.onSelectEquipment(tag);
-    this.updateHighlighting();
-  }
-
-  private updateHighlighting() {
-    this.equipmentMeshes.forEach((meshes, tag) => {
-      const isSelected = tag === this.selectedTag;
-      meshes.forEach((mesh) => {
-        const mat = mesh.material as StandardMaterial;
-        if (mat) {
-          if (isSelected) {
-            mat.emissiveColor = new Color3(0.2, 0.45, 0.85);
-          } else {
-            mat.emissiveColor = new Color3(0, 0, 0);
-          }
-        }
+      const mesh = MeshBuilder.CreateTube(`cable-${kind}`, { path: points, radius: 0.075, tessellation: 6 }, this.scene);
+      mesh.material = material;
+      mesh.isPickable = false;
+      const markers = Array.from({ length: 3 }, () => {
+        const dot = MeshBuilder.CreateSphere('power-pulse', { diameter: 0.27, segments: 6 }, this.scene);
+        dot.material = this.materials.get('lamp')!;
+        dot.isPickable = false;
+        return dot;
       });
-    });
+      this.routes.push({ mesh, points, markers, kind, floor });
+    };
+    add('hv', [v(-38, 0.55, -18), v(-34.5, 0.55, -18), v(-34.5, 2.9, -6.2), v(-31.5, 2.9, -6.7)]);
+    add('normal', [v(-31.5, 2.4, -6.7), v(-31.5, 3.1, -8.3), v(-28, 3.1, -8.3), v(-28, 2.5, -6.2)]);
+    for (let f = 0; f < 6; f++) {
+      const x = -23.7 + f * 0.13;
+      add('feeder', [v(-28, 2.8, -6.2), v(x, 2.8, -4.4), v(x, y(f) + 3.2, -4.4), v(-22.3, y(f) + 3.2, -6), v(-22.3, y(f) + 2, -6)], f);
+    }
+    add('apfc', [v(-28, 2.4, -6.2), v(-27.1, 2.8, -6.2), v(-27.1, 2.8, -9.5), v(-28, 2.4, -9.5)]);
+    add('emergency', [v(-31, 2.3, 4), v(-31, 3.2, 1), v(-27.5, 3.2, 1), v(-27.5, 2.3, 3.8), v(-23, 2.3, -1.7)]);
+    add('emergency', [v(-31, 2.3, 4), v(-35, 3.2, 4), v(-35, 3.2, 12), v(-34, 2.2, 12), v(-31, 1.7, 11)]);
+    add('normal', [v(-28, 2.8, -6.2), v(-26, 2.8, -6.2), v(-26, 2.8, 3.8), v(-27.5, 2.3, 3.8), v(-23, 2.3, -1.7)]);
+    add('normal', [v(-28, 2.8, -6.2), v(-25.7, 2.8, -6.2), v(-25.7, 2.8, 1.5), v(-23, 2.3, 1.5)]);
+    // The dedicated fire feeder starts at the transformer side, before the main breaker.
+    add('fire', [v(-31.5, 2.5, -6.7), v(-35, 3.1, -6.7), v(-35, 3.1, 12), v(-34, 2.2, 12), v(-31, 1.7, 11)]);
+    this.setRouteVisibility();
+  }
 
-    // Also highlight corresponding feeder/path cables when equipment is selected
-    this.cableMeshes.forEach((cables, key) => {
-      const isMatched = !!(
-        this.selectedTag &&
-        (key === this.selectedTag ||
-          (this.selectedTag.startsWith('P-F') && key === this.selectedTag.replace('P-', '')) ||
-          (this.selectedTag === 'T1' && key === 'LV_MAIN') ||
-          (this.selectedTag === 'HV-01' && key === 'HV') ||
-          (this.selectedTag === 'GEN-1' && key === 'GEN'))
-      );
-      cables.forEach((cable) => {
-        const mat = cable.material as StandardMaterial;
-        if (mat) {
-          if (isMatched) {
-            mat.emissiveColor = new Color3(0.3, 0.85, 1.0);
-          } else {
-            mat.emissiveColor = new Color3(0, 0, 0);
-          }
-        }
-      });
-    });
+  private setRouteVisibility() {
+    const o = this.options;
+    for (const route of this.routes) {
+      const mode = o.showPowerPath;
+      const category = route.kind === 'hv' ? o.showHV : route.kind === 'feeder' ? o.showFeeders : route.kind === 'apfc' ? o.showAPFC && o.apfcEnergized : route.kind === 'emergency' || route.kind === 'fire' ? o.showEmergency : o.showLV;
+      const active = mode === 'normal' ? ['hv', 'normal', 'feeder', 'apfc'].includes(route.kind) : route.kind === mode;
+      route.mesh.isVisible = category && active && (o.isolatedFloor === null || route.floor < 0 || route.floor === o.isolatedFloor);
+      route.markers.forEach(m => { m.isVisible = route.mesh.isVisible && o.animateFlow; });
+    }
+  }
+
+  private pointAlong(points: Vector3[], fraction: number): Vector3 {
+    let total = 0;
+    for (let i = 1; i < points.length; i++) total += Vector3.Distance(points[i - 1], points[i]);
+    let distance = fraction * total;
+    for (let i = 1; i < points.length; i++) {
+      const length = Vector3.Distance(points[i - 1], points[i]);
+      if (distance <= length) return Vector3.Lerp(points[i - 1], points[i], length ? distance / length : 0);
+      distance -= length;
+    }
+    return points[points.length - 1];
   }
 
   public updateViewOptions(options: ViewOptions3D) {
-    this.currentOptions = options;
-
-    this.shellMeshes.forEach((mesh) => {
-      if (options.shellMode === 'hidden') {
-        mesh.isVisible = false;
-      } else if (options.shellMode === 'cutaway') {
-        mesh.isVisible = mesh.name !== 'frontWall';
-      } else {
-        mesh.isVisible = true;
-      }
-
-      if (mesh.material && mesh.name.includes('Wall')) {
-        mesh.material.alpha = options.shellOpacity;
-      }
+    const previous = this.options;
+    this.options = options;
+    if (!this.scene || !this.pipeline) return;
+    const o = options;
+    this.floors.forEach((floor, i) => {
+      floor.position.y = LEVELS[i] + i * o.explodedOffset * 5;
+      floor.setEnabled(o.isolatedFloor === null || o.isolatedFloor === i);
     });
-
-    this.updateExplodedOffset(options.explodedOffset);
-
-    this.setCategoryVisibility('HV-01', options.showHV);
-    this.setCategoryVisibility('METER', options.showHV);
-    const hvCables = this.cableMeshes.get('HV');
-    if (hvCables) hvCables.forEach((c) => (c.isVisible = options.showHV));
-
-    this.setCategoryVisibility('T1', options.showTransformer);
-    this.setCategoryVisibility('MDB-A', options.showLV);
-    this.setCategoryVisibility('Q0', options.showLV);
-    const lvMain = this.cableMeshes.get('LV_MAIN');
-    if (lvMain) lvMain.forEach((c) => (c.isVisible = options.showLV));
-
-    this.setCategoryVisibility('C1', options.showAPFC);
-    this.setCategoryVisibility('QC', options.showAPFC);
-
-    for (let f = 1; f <= 6; f++) {
-      this.setCategoryVisibility(`P-F${f}`, options.showFeeders);
-      const feederCables = this.cableMeshes.get(`F${f}`);
-      if (feederCables) feederCables.forEach((c) => (c.isVisible = options.showFeeders));
+    for (const part of this.parts) {
+      const facade = part.role.startsWith('facade');
+      let visible = true;
+      if (facade) visible = o.shellMode !== 'hidden' && !(o.shellMode === 'cutaway' && ['facade-front', 'facade-east'].includes(part.role));
+      if (part.role === 'context') visible = o.shellMode === 'normal' && o.isolatedFloor === null;
+      const tag = part.tag;
+      if (tag === 'HV-01' || tag === 'METER') visible = o.showHV;
+      if (tag === 'T1') visible = o.showTransformer;
+      if (['MDB-A', 'Q0', 'EDB', 'MDP'].includes(tag ?? '')) visible = o.showLV;
+      if (tag?.startsWith('P-F') || tag === 'RISER') visible = o.showFeeders;
+      if (tag === 'C1' || tag === 'QC') visible = o.showAPFC;
+      if (['GEN-1', 'ATS-E', 'FP-ATS', 'FP-MOTOR'].includes(tag ?? '')) visible = o.showEmergency;
+      if (['HVAC-LOAD', 'LIFT-MOTOR', 'WP-MOTOR'].includes(tag ?? '')) visible = o.showLoads;
+      part.mesh.isVisible = visible;
     }
-
-    this.setCategoryVisibility('GEN-1', options.showEmergency);
-    this.setCategoryVisibility('QG', options.showEmergency);
-    this.setCategoryVisibility('ATS-E', options.showEmergency);
-    this.setCategoryVisibility('FP-ATS', options.showEmergency);
-    this.setCategoryVisibility('FP-MOTOR', options.showEmergency);
-    const genCables = this.cableMeshes.get('GEN');
-    if (genCables) genCables.forEach((c) => (c.isVisible = options.showEmergency));
-
-    this.setCategoryVisibility('EDB', options.showLV);
-    this.setCategoryVisibility('MDP', options.showLV);
-    this.setCategoryVisibility('HVAC-LOAD', options.showLoads);
-    this.setCategoryVisibility('LIFT-MOTOR', options.showLoads);
-    this.setCategoryVisibility('WP-MOTOR', options.showLoads);
+    this.materials.get('glass')!.alpha = o.shellOpacity;
+    this.labels.forEach(label => { label.isVisible = o.showLabels; });
+    const dusk = o.lighting === 'dusk';
+    this.interiorLights.forEach(light => { light.intensity = dusk ? 90 : 5; });
+    this.materials.get('glass')!.emissiveColor = dusk ? new Color3(0.055, 0.033, 0.01) : Color3.Black();
+    this.sun.intensity = dusk ? 1.4 : 3.2;
+    this.sun.diffuse = Color3.FromHexString(dusk ? '#ffb677' : '#fff0d4');
+    this.sun.direction = dusk ? v(-0.8, -0.35, 0.6) : v(-0.6, -1, 0.55);
+    this.ambient.intensity = dusk ? 0.18 : 0.32;
+    this.ambient.diffuse = Color3.FromHexString(dusk ? '#b2c4e9' : '#d4e3e8');
+    this.scene.environmentIntensity = dusk ? 0.4 : 0.7;
+    this.scene.clearColor = Color4.FromHexString(dusk ? '#687987ff' : '#e3e8e7ff');
+    this.scene.imageProcessingConfiguration.exposure = dusk ? 0.9 : 0.88;
+    this.materials.get('lamp')!.emissiveColor = Color3.FromHexString('#ffdba0').scale(dusk ? 3 : 1.1);
+    this.pipeline.bloomWeight = dusk ? 0.25 : 0.1;
+    const high = o.quality === 'high';
+    this.pipeline.samples = high ? Math.min(4, this.engine.getCaps().maxMSAASamples) : 1;
+    this.engine.setHardwareScalingLevel(1 / Math.min(window.devicePixelRatio || 1, high ? 2 : 1.25));
+    this.shadows.filteringQuality = high ? ShadowGenerator.QUALITY_HIGH : ShadowGenerator.QUALITY_LOW;
+    if (!this.routes.length || previous.explodedOffset !== o.explodedOffset) this.rebuildRoutes();
+    else this.setRouteVisibility();
   }
 
-  private setCategoryVisibility(tag: string, visible: boolean) {
-    const meshes = this.equipmentMeshes.get(tag);
-    if (meshes) {
-      meshes.forEach((m) => (m.isVisible = visible));
-    }
+  public selectEquipment(tag: string | null) {
+    this.selectedTag = tag;
+    if (!this.highlight) return;
+    this.highlight.removeAllMeshes();
+    for (const part of this.parts) if (tag && part.tag === tag) this.highlight.addMesh(part.mesh, Color3.FromHexString('#75e7bf'));
   }
 
-  private updateExplodedOffset(factor: number) {
-    this.explodedOffsets.forEach((offset, mesh) => {
-      const orig = this.originalPositions.get(mesh);
-      if (orig) {
-        mesh.position.x = orig.x + offset.x * factor;
-        mesh.position.y = orig.y + offset.y * factor;
-        mesh.position.z = orig.z + offset.z * factor;
-      }
-    });
+  public focusEquipment(tag: string) {
+    const parts = this.parts.filter(part => part.tag === tag);
+    if (!parts.length) return;
+    const target = Vector3.Zero();
+    for (const part of parts) { part.mesh.computeWorldMatrix(true); target.addInPlace(part.mesh.getBoundingInfo().boundingBox.centerWorld); }
+    target.scaleInPlace(1 / parts.length);
+    this.moveCamera(target, tag === 'HVAC-LOAD' ? 45 : 14, -1.35, 1.08);
   }
 
-  public setCameraPreset(preset: 'home' | 'plant' | 'riser' | 'retail' | 'office' | 'roof' | 'basement') {
+  public setCameraPreset(preset: CameraPreset) {
+    const expansion = this.options.explodedOffset * 5;
+    const presets: Record<CameraPreset, [Vector3, number, number, number]> = {
+      home: [v(-1, 10 + expansion * 3, 0), 122 + expansion * 7, -1.02, 1.16],
+      plant: [v(-31, 1.6, -7), 19, -1.45, 1.04],
+      riser: [v(-23, 12 + expansion * 3, -4), 43 + expansion * 4, -0.8, 1.22],
+      retail: [v(0, 3.5 + expansion, -3), 66, -1.03, 1.14],
+      office: [v(2, 15.2 + expansion * 3, -4), 65, -1.02, 1.05],
+      roof: [v(0, 27 + expansion * 6, 0), 64, -0.9, 0.55],
+      basement: [v(-31, 1.3, 10), 23, -1.1, 0.85]
+    };
+    this.moveCamera(...presets[preset]);
+  }
+
+  private moveCamera(target: Vector3, radius: number, alpha: number, beta: number) {
     if (!this.camera) return;
-
-    let targetAlpha = -Math.PI / 3;
-    let targetBeta = Math.PI / 3;
-    let targetRadius = 38;
-    let targetLook = new Vector3(0, 9, 0);
-
-    switch (preset) {
-      case 'home':
-        targetAlpha = -Math.PI / 3;
-        targetBeta = Math.PI / 3;
-        targetRadius = 38;
-        targetLook = new Vector3(0, 9, 0);
-        break;
-      case 'plant':
-        targetAlpha = -Math.PI / 2.5;
-        targetBeta = Math.PI / 2.8;
-        targetRadius = 12;
-        targetLook = new Vector3(-2, 1.4, -2.5);
-        break;
-      case 'riser':
-        targetAlpha = -Math.PI / 1.8;
-        targetBeta = Math.PI / 2.3;
-        targetRadius = 20;
-        targetLook = new Vector3(-2.5, 9.5, 0);
-        break;
-      case 'retail':
-        targetAlpha = -Math.PI / 3;
-        targetBeta = Math.PI / 2.6;
-        targetRadius = 17;
-        targetLook = new Vector3(0, 3.8, 0);
-        break;
-      case 'office':
-        targetAlpha = -Math.PI / 3;
-        targetBeta = Math.PI / 2.6;
-        targetRadius = 20;
-        targetLook = new Vector3(0, 12.0, 0);
-        break;
-      case 'roof':
-        targetAlpha = -Math.PI / 4;
-        targetBeta = Math.PI / 4.5;
-        targetRadius = 15;
-        targetLook = new Vector3(0, 20.0, 0);
-        break;
-      case 'basement':
-        targetAlpha = -Math.PI / 3;
-        targetBeta = Math.PI / 2.5;
-        targetRadius = 13;
-        targetLook = new Vector3(4, -1.2, 0);
-        break;
-    }
-
+    radius *= this.framingScale;
     this.scene.stopAnimation(this.camera);
-
-    this.camera.inertialAlphaOffset = 0;
-    this.camera.inertialBetaOffset = 0;
-    this.camera.inertialRadiusOffset = 0;
-    this.camera.inertialPanningX = 0;
-    this.camera.inertialPanningY = 0;
-
-    const twoPi = Math.PI * 2;
-    let diff = (targetAlpha - this.camera.alpha) % twoPi;
-    if (diff > Math.PI) diff -= twoPi;
-    if (diff < -Math.PI) diff += twoPi;
-    const finalAlpha = this.camera.alpha + diff;
-
+    this.camera.inertialAlphaOffset = this.camera.inertialBetaOffset = this.camera.inertialRadiusOffset = 0;
+    this.camera.inertialPanningX = this.camera.inertialPanningY = 0;
     const ease = new CubicEase();
     ease.setEasingMode(EasingFunction.EASINGMODE_EASEINOUT);
-
-    Animation.CreateAndStartAnimation('camAlpha', this.camera, 'alpha', 60, 35, this.camera.alpha, finalAlpha, Animation.ANIMATIONLOOPMODE_CONSTANT, ease);
-    Animation.CreateAndStartAnimation('camBeta', this.camera, 'beta', 60, 35, this.camera.beta, targetBeta, Animation.ANIMATIONLOOPMODE_CONSTANT, ease);
-    Animation.CreateAndStartAnimation('camRadius', this.camera, 'radius', 60, 35, this.camera.radius, targetRadius, Animation.ANIMATIONLOOPMODE_CONSTANT, ease);
-    Animation.CreateAndStartAnimation('camTarget', this.camera, 'target', 60, 35, this.camera.target.clone(), targetLook, Animation.ANIMATIONLOOPMODE_CONSTANT, ease);
+    const delta = Math.atan2(Math.sin(alpha - this.camera.alpha), Math.cos(alpha - this.camera.alpha));
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    for (const [property, from, to] of [
+      ['alpha', this.camera.alpha, this.camera.alpha + delta], ['beta', this.camera.beta, beta],
+      ['radius', this.camera.radius, radius], ['target', this.camera.target.clone(), target]
+    ] as const) Animation.CreateAndStartAnimation(`camera-${property}`, this.camera, property, 60, reduced ? 1 : 45, from, to, Animation.ANIMATIONLOOPMODE_CONSTANT, ease);
   }
 
+  public focusFloor(floor: number) {
+    const y = LEVELS[floor] + floor * this.options.explodedOffset * 5;
+    this.moveCamera(v(0, y + 1, 0), 78, -1.02, 0.85);
+  }
+
+  private getFramingScale() {
+    const aspect = this.canvas.clientWidth / Math.max(1, this.canvas.clientHeight);
+    return Math.max(1, 0.95 / Math.max(aspect, 0.3));
+  }
+
+  public resize() {
+    if (this.disposed) return;
+    this.engine?.resize();
+    if (this.camera) {
+      const next = this.getFramingScale();
+      // A running preset animation must not overwrite portrait reframing.
+      if (Math.abs(next - this.framingScale) > 0.001) this.scene.stopAnimation(this.camera);
+      this.camera.radius *= next / this.framingScale;
+      this.framingScale = next;
+    }
+  }
   public dispose() {
-    this.isDisposed = true;
-    window.removeEventListener('resize', this.onResize);
-    if (this.scene) {
-      this.scene.dispose();
-    }
-    if (this.engine) {
-      this.engine.dispose();
-    }
+    this.disposed = true;
+    this.engine?.stopRenderLoop();
+    this.scene?.dispose();
+    this.engine?.dispose();
   }
 }
